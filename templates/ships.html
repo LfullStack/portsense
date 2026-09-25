@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Gestion de Buques{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h3><i class="bi bi-ship"></i> Gestion de Buques</h3>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-{% if edit_ship is defined and edit_ship %}pencil{% else %}plus-circle{% endif %}"></i>
+                {% if edit_ship is defined and edit_ship %}Editar Buque{% else %}Registrar Buque{% endif %}
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{% if edit_ship is defined and edit_ship %}{{ url_for('edit_ship', ship_id=edit_ship.id) }}{% else %}{{ url_for('ships') }}{% endif %}">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del Buque</label>
+                        <input type="text" name="name" class="form-control"
+                               value="{% if edit_ship is defined and edit_ship %}{{ edit_ship.name }}{% endif %}"
+                               placeholder="Ej: MV Pacific Star" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha de Llegada</label>
+                        <input type="date" name="arrival_date" class="form-control"
+                               value="{% if edit_ship is defined and edit_ship %}{{ edit_ship.arrival_date.strftime('%Y-%m-%d') }}{% endif %}"
+                               required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hora Estimada (ETA)</label>
+                        <input type="time" name="eta" class="form-control"
+                               value="{% if edit_ship is defined and edit_ship %}{{ edit_ship.eta.strftime('%H:%M') }}{% endif %}"
+                               required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Carga</label>
+                        <input type="text" name="cargo_type" class="form-control"
+                               value="{% if edit_ship is defined and edit_ship %}{{ edit_ship.cargo_type or '' }}{% endif %}"
+                               placeholder="Ej: Contenedores, Granel, etc.">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Estado</label>
+                        <select name="status" class="form-select">
+                            <option value="pending" {% if edit_ship is defined and edit_ship and edit_ship.status == 'pending' %}selected{% endif %}>Pendiente</option>
+                            <option value="in_progress" {% if edit_ship is defined and edit_ship and edit_ship.status == 'in_progress' %}selected{% endif %}>En Proceso</option>
+                            <option value="completed" {% if edit_ship is defined and edit_ship and edit_ship.status == 'completed' %}selected{% endif %}>Completado</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-lg"></i>
+                        {% if edit_ship is defined and edit_ship %}Actualizar{% else %}Registrar{% endif %}
+                    </button>
+                    {% if edit_ship is defined and edit_ship %}
+                    <a href="{{ url_for('ships') }}" class="btn btn-secondary w-100 mt-2">Cancelar</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <i class="bi bi-list-ul"></i> Buques Registrados ({{ ships|length }})
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Fecha</th>
+                                <th>ETA</th>
+                                <th>Carga</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ship in ships %}
+                            <tr>
+                                <td><strong>{{ ship.name }}</strong></td>
+                                <td>{{ ship.arrival_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ ship.eta.strftime('%H:%M') }}</td>
+                                <td>{{ ship.cargo_type or '-' }}</td>
+                                <td>
+                                    <span class="badge bg-{% if ship.status == 'pending' %}warning{% elif ship.status == 'in_progress' %}info{% else %}success{% endif %}">
+                                        {% if ship.status == 'pending' %}Pendiente{% elif ship.status == 'in_progress' %}En Proceso{% else %}Completado{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('edit_ship', ship_id=ship.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{{ url_for('delete_ship', ship_id=ship.id) }}" class="btn btn-sm btn-outline-danger"
+                                       onclick="return confirm('Eliminar este buque?')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not ships %}
+                            <tr><td colspan="6" class="text-center text-muted">No hay buques registrados</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h3><i class="bi bi-speedometer2"></i> Panel Principal</h3>
+        <hr>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Buques</h6>
+                        <h2 id="stat-total">{{ total_ships }}</h2>
+                    </div>
+                    <i class="bi bi-ship" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Pendientes</h6>
+                        <h2 id="stat-pending">{{ pending_ships }}</h2>
+                    </div>
+                    <i class="bi bi-clock-history" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">En Proceso</h6>
+                        <h2 id="stat-progress">{{ in_progress_ships }}</h2>
+                    </div>
+                    <i class="bi bi-gear" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Completados</h6>
+                        <h2 id="stat-completed">{{ completed_ships }}</h2>
+                    </div>
+                    <i class="bi bi-check-circle" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <i class="bi bi-graph-up"></i> Estado de Operaciones
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <i class="bi bi-bell"></i> Alertas Recientes
+            </div>
+            <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                {% if recent_alerts %}
+                    {% for alert in recent_alerts %}
+                    <div class="alert alert-{% if alert.severity == 'high' %}danger{% elif alert.severity == 'medium' %}warning{% else %}info{% endif %} py-2 mb-2">
+                        <small class="fw-bold">{{ alert.ship.name }}</small><br>
+                        <small>{{ alert.message }}</small>
+                        <br><small class="text-muted">{{ alert.created_at.strftime('%d/%m %H:%M') }}</small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">Sin alertas pendientes</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <i class="bi bi-exclamation-triangle"></i> Analisis de Riesgo por Buque
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Buque</th>
+                            <th>Fecha Llegada</th>
+                            <th>Estado</th>
+                            <th>Nivel de Riesgo</th>
+                            <th>Alertas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in risk_data %}
+                        <tr>
+                            <td><strong>{{ item.ship.name }}</strong></td>
+                            <td>{{ item.ship.arrival_date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <span class="badge bg-{% if item.ship.status == 'pending' %}warning{% elif item.ship.status == 'in_progress' %}info{% else %}success{% endif %}">
+                                    {% if item.ship.status == 'pending' %}Pendiente{% elif item.ship.status == 'in_progress' %}En Proceso{% else %}Completado{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if item.risk == 'alto' %}danger{% elif item.risk == 'medio' %}warning{% else %}success{% endif %} fs-6">
+                                    {{ item.risk|upper }}
+                                </span>
+                            </td>
+                            <td>{{ item.alert_count }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% if not risk_data %}
+                        <tr><td colspan="5" class="text-center text-muted">No hay buques registrados</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const ctx = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pendientes', 'En Proceso', 'Completados'],
+            datasets: [{
+                data: [{{ pending_ships }}, {{ in_progress_ships }}, {{ completed_ships }}],
+                backgroundColor: ['#ffc107', '#17a2b8', '#28a745'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+{% endblock %}

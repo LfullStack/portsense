@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Gestion de Mercancias{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h3><i class="bi bi-box-seam"></i> Gestion de Mercancias</h3>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-plus-circle"></i> Registrar Mercancia
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Buque</label>
+                        <select name="ship_id" class="form-select" required>
+                            <option value="">Seleccionar buque...</option>
+                            {% for ship in ships %}
+                            <option value="{{ ship.id }}">{{ ship.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Carga</label>
+                        <input type="text" name="cargo_type" class="form-control" placeholder="Ej: Contenedores, Granel" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad</label>
+                        <input type="number" name="quantity" class="form-control" placeholder="Unidades" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Peso (toneladas)</label>
+                        <input type="number" name="weight" step="0.1" class="form-control" placeholder="Peso total" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ubicacion</label>
+                        <input type="text" name="location" class="form-control" placeholder="Ej: Patio A, Bodega 3">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Destino</label>
+                        <input type="text" name="destination" class="form-control" placeholder="Ej: Ciudad de Mexico">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-lg"></i> Registrar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <i class="bi bi-list-ul"></i> Mercancias Registradas ({{ cargo_items|length }})
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Buque</th>
+                                <th>Tipo</th>
+                                <th>Cantidad</th>
+                                <th>Peso</th>
+                                <th>Ubicacion</th>
+                                <th>Destino</th>
+                                <th>Accion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cargo_items %}
+                            <tr>
+                                <td><strong>{{ item.ship.name }}</strong></td>
+                                <td>{{ item.cargo_type }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.weight }} t</td>
+                                <td>{{ item.location or '-' }}</td>
+                                <td>{{ item.destination or '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('delete_cargo', cargo_id=item.id) }}" class="btn btn-sm btn-outline-danger"
+                                       onclick="return confirm('Eliminar esta mercancia?')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not cargo_items %}
+                            <tr><td colspan="7" class="text-center text-muted">No hay mercancias registradas</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
