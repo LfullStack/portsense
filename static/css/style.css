@@ -10,11 +10,11 @@ body {
 .card {
     border: none;
     border-radius: 10px;
-    transition: transform 0.2s;
 }
 
-.card:hover {
-    transform: translateY(-2px);
+.chart-container {
+    position: relative;
+    height: 300px;
 }
 
 .card-header {

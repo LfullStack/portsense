@@ -68,8 +68,16 @@
                 <i class="bi bi-list-ul"></i> Buques Registrados ({{ ships|length }})
             </div>
             <div class="card-body">
+                <div class="input-group mb-3" style="max-width: 400px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control table-search" data-target="shipsTable"
+                           placeholder="Buscar buque por nombre, carga o estado...">
+                    <button class="btn btn-outline-secondary clear-search" type="button" title="Limpiar busqueda">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover" id="shipsTable" data-paginate="true">
                         <thead>
                             <tr>
                                 <th>Nombre</th>
@@ -104,10 +112,11 @@
                             </tr>
                             {% endfor %}
                             {% if not ships %}
-                            <tr><td colspan="6" class="text-center text-muted">No hay buques registrados</td></tr>
+                            <tr class="empty-row"><td colspan="6" class="text-center text-muted">No hay buques registrados</td></tr>
                             {% endif %}
                         </tbody>
                     </table>
+                    <div id="shipsTable-pagination"></div>
                 </div>
             </div>
         </div>

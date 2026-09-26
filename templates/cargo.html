@@ -60,8 +60,16 @@
                 <i class="bi bi-list-ul"></i> Mercancias Registradas ({{ cargo_items|length }})
             </div>
             <div class="card-body">
+                <div class="input-group mb-3" style="max-width: 400px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control table-search" data-target="cargoTable"
+                           placeholder="Buscar mercancia por buque, tipo o destino...">
+                    <button class="btn btn-outline-secondary clear-search" type="button" title="Limpiar busqueda">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover" id="cargoTable" data-paginate="true">
                         <thead>
                             <tr>
                                 <th>Buque</th>
@@ -91,10 +99,11 @@
                             </tr>
                             {% endfor %}
                             {% if not cargo_items %}
-                            <tr><td colspan="7" class="text-center text-muted">No hay mercancias registradas</td></tr>
+                            <tr class="empty-row"><td colspan="7" class="text-center text-muted">No hay mercancias registradas</td></tr>
                             {% endif %}
                         </tbody>
                     </table>
+                    <div id="cargoTable-pagination"></div>
                 </div>
             </div>
         </div>

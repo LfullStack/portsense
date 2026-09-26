@@ -1,6 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from datetime import datetime, date
+import io
+from openpyxl import Workbook
+from openpyxl.styles import Font
 from config import Config
 from database import db, User, Ship, Cargo, Alert, Operation
 
@@ -99,13 +102,19 @@ def dashboard():
             'risk': get_risk_level(alerts),
             'alert_count': len(alerts)
         })
+    risk_counts = {'alto': 0, 'medio': 0, 'bajo': 0}
+    for item in risk_data:
+        risk_counts[item['risk']] = risk_counts.get(item['risk'], 0) + 1
     return render_template('dashboard.html',
         total_ships=total_ships,
         pending_ships=pending_ships,
         in_progress_ships=in_progress_ships,
         completed_ships=completed_ships,
         recent_alerts=recent_alerts,
-        risk_data=risk_data)
+        risk_data=risk_data,
+        risk_alto=risk_counts['alto'],
+        risk_medio=risk_counts['medio'],
+        risk_bajo=risk_counts['bajo'])
 
 @app.route('/ships', methods=['GET', 'POST'])
 @login_required
@@ -245,6 +254,88 @@ def dashboard_data():
         'medium_alerts': Alert.query.filter_by(severity='medium', is_read=False).count(),
         'low_alerts': Alert.query.filter_by(severity='low', is_read=False).count()
     })
+
+def excel_response(filename, sheet_name, headers, rows):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = sheet_name
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+    for row in rows:
+        ws.append(row)
+    for col in ws.columns:
+        max_length = max((len(str(cell.value or '')) for cell in col), default=10)
+        ws.column_dimensions[col[0].column_letter].width = max_length + 2
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return send_file(output,
+        download_name=filename,
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+@app.route('/reports/exportar/buques')
+@login_required
+def export_buques_excel():
+    rows = []
+    for ship in Ship.query.all():
+        rows.append([
+            ship.id, ship.name,
+            ship.arrival_date.strftime('%d/%m/%Y'),
+            ship.eta.strftime('%H:%M'),
+            ship.cargo_type or '',
+            ship.status,
+            Cargo.query.filter_by(ship_id=ship.id).count()
+        ])
+    return excel_response('reporte_buques.xlsx', 'Buques',
+        ['ID', 'Nombre', 'Fecha Llegada', 'ETA', 'Tipo de Carga', 'Estado', 'Cant. Mercancias'],
+        rows)
+
+@app.route('/reports/exportar/mercancias')
+@login_required
+def export_mercancias_excel():
+    rows = []
+    for cargo_item in Cargo.query.all():
+        rows.append([
+            cargo_item.id, cargo_item.ship.name, cargo_item.cargo_type,
+            cargo_item.quantity, cargo_item.weight,
+            cargo_item.location or '', cargo_item.destination or ''
+        ])
+    return excel_response('reporte_mercancias.xlsx', 'Mercancias',
+        ['ID', 'Buque', 'Tipo', 'Cantidad', 'Peso (t)', 'Ubicacion', 'Destino'],
+        rows)
+
+@app.route('/reports/exportar/alertas')
+@login_required
+def export_alertas_excel():
+    rows = []
+    for alert in Alert.query.order_by(Alert.created_at.desc()).all():
+        rows.append([
+            alert.id, alert.ship.name, alert.alert_type, alert.severity,
+            alert.message, alert.created_at.strftime('%d/%m/%Y %H:%M'),
+            'Si' if alert.is_read else 'No'
+        ])
+    return excel_response('reporte_alertas.xlsx', 'Alertas',
+        ['ID', 'Buque', 'Tipo', 'Severidad', 'Mensaje', 'Fecha', 'Leida'],
+        rows)
+
+@app.route('/reports/exportar/operaciones')
+@login_required
+def export_operaciones_excel():
+    rows = []
+    for ship in Ship.query.all():
+        ops = Operation.query.filter_by(ship_id=ship.id).all()
+        if ops:
+            for op in ops:
+                start = op.start_time.strftime('%d/%m/%Y %H:%M') if op.start_time else ''
+                end = op.end_time.strftime('%d/%m/%Y %H:%M') if op.end_time else ''
+                rows.append([ship.name, ship.id, op.status, start, end, op.notes or ''])
+        else:
+            rows.append([ship.name, ship.id, ship.status, '', '', 'Sin operacion registrada'])
+    return excel_response('reporte_operaciones.xlsx', 'Operaciones',
+        ['Buque', 'ID Buque', 'Estado', 'Inicio', 'Fin', 'Notas'],
+        rows)
 
 if __name__ == '__main__':
     with app.app_context():

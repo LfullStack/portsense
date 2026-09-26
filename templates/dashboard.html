@@ -65,13 +65,27 @@
 </div>
 
 <div class="row mb-4">
-    <div class="col-md-8">
+    <div class="col-md-4">
         <div class="card shadow">
             <div class="card-header bg-dark text-white">
                 <i class="bi bi-graph-up"></i> Estado de Operaciones
             </div>
             <div class="card-body">
-                <canvas id="statusChart" height="100"></canvas>
+                <div class="chart-container">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <i class="bi bi-exclamation-triangle"></i> Nivel de Riesgo por Buque
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -104,7 +118,15 @@
                 <i class="bi bi-exclamation-triangle"></i> Analisis de Riesgo por Buque
             </div>
             <div class="card-body">
-                <table class="table table-hover">
+                <div class="input-group mb-3" style="max-width: 400px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control table-search" data-target="riskTable"
+                           placeholder="Buscar buque, estado o nivel de riesgo...">
+                    <button class="btn btn-outline-secondary clear-search" type="button" title="Limpiar busqueda">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <table class="table table-hover" id="riskTable" data-paginate="true">
                     <thead>
                         <tr>
                             <th>Buque</th>
@@ -133,10 +155,11 @@
                         </tr>
                         {% endfor %}
                         {% if not risk_data %}
-                        <tr><td colspan="5" class="text-center text-muted">No hay buques registrados</td></tr>
+                        <tr class="empty-row"><td colspan="5" class="text-center text-muted">No hay buques registrados</td></tr>
                         {% endif %}
                     </tbody>
                 </table>
+                <div id="riskTable-pagination"></div>
             </div>
         </div>
     </div>
@@ -158,8 +181,36 @@
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    const ctxRisk = document.getElementById('riskChart').getContext('2d');
+    new Chart(ctxRisk, {
+        type: 'bar',
+        data: {
+            labels: ['Alto', 'Medio', 'Bajo'],
+            datasets: [{
+                label: 'Buques por nivel de riesgo',
+                data: [{{ risk_alto }}, {{ risk_medio }}, {{ risk_bajo }}],
+                backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
             }
         }
     });

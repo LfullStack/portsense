@@ -6,14 +6,14 @@
     <title>PortuSense - {% block title %}{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body>
     {% if current_user.is_authenticated %}
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="{{ url_for('dashboard') }}">
-                <i class="bi bi-anchor"></i> PortuSense
+                PortuSense
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -27,7 +27,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('ships') }}">
-                            <i class="bi bi-ship"></i> Buques
+                            <i class="fas fa-ship"></i> Buques
                         </a>
                     </li>
                     <li class="nav-item">
@@ -78,6 +78,10 @@
 
         {% block content %}{% endblock %}
     </div>
+
+    <footer style="text-align:center; padding:12px; font-size:13px;">
+        PORTUSENSE v1.0 · © 2026 Por Ing. Levi J. Quintero
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
