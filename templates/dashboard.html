@@ -9,54 +9,43 @@
     </div>
 </div>
 
-<div class="row mb-4">
+<!-- Fila 1: Buques -->
+<div class="row mb-3">
     <div class="col-md-3">
-        <div class="card text-white bg-primary shadow">
+        <div class="card text-white bg-primary shadow card-metric">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Total Buques</h6>
-                        <h2 id="stat-total">{{ total_ships }}</h2>
-                    </div>
-                    <i class="bi bi-ship" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                    <div><h6 class="card-title">Total Buques</h6><h2>{{ total_ships }}</h2></div>
+                    <i class="fas fa-ship" style="font-size: 2.5rem; opacity: 0.5;"></i>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-warning shadow">
+        <div class="card text-white bg-warning shadow card-metric">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Pendientes</h6>
-                        <h2 id="stat-pending">{{ pending_ships }}</h2>
-                    </div>
+                    <div><h6 class="card-title">Pendientes</h6><h2>{{ pending_ships }}</h2></div>
                     <i class="bi bi-clock-history" style="font-size: 2.5rem; opacity: 0.5;"></i>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-info shadow">
+        <div class="card text-white bg-info shadow card-metric">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">En Proceso</h6>
-                        <h2 id="stat-progress">{{ in_progress_ships }}</h2>
-                    </div>
+                    <div><h6 class="card-title">En Proceso</h6><h2>{{ in_progress_ships }}</h2></div>
                     <i class="bi bi-gear" style="font-size: 2.5rem; opacity: 0.5;"></i>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-success shadow">
+        <div class="card text-white bg-success shadow card-metric">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Completados</h6>
-                        <h2 id="stat-completed">{{ completed_ships }}</h2>
-                    </div>
+                    <div><h6 class="card-title">Completados</h6><h2>{{ completed_ships }}</h2></div>
                     <i class="bi bi-check-circle" style="font-size: 2.5rem; opacity: 0.5;"></i>
                 </div>
             </div>
@@ -64,41 +53,124 @@
     </div>
 </div>
 
+<!-- Fila 2: Transporte, Personal, Seguridad -->
+<div class="row mb-3">
+    <div class="col-md-2">
+        <div class="card shadow card-metric border-0">
+            <div class="card-body text-center">
+                <i class="fas fa-truck fs-2 text-primary"></i>
+                <h4 class="mt-1">{{ total_trucks }}</h4>
+                <small class="text-muted">Camiones</small>
+                <div class="mt-1"><span class="badge bg-success">{{ available_trucks }} disp.</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow card-metric border-0">
+            <div class="card-body text-center">
+                <i class="bi bi-person-badge fs-2 text-success"></i>
+                <h4 class="mt-1">{{ total_drivers }}</h4>
+                <small class="text-muted">Conductores</small>
+                <div class="mt-1"><span class="badge bg-success">{{ active_drivers }} activos</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow card-metric border-0">
+            <div class="card-body text-center">
+                <i class="bi bi-people fs-2 text-info"></i>
+                <h4 class="mt-1">{{ total_personnel }}</h4>
+                <small class="text-muted">Personal</small>
+                <div class="mt-1"><span class="badge bg-success">{{ active_personnel }} activos</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow card-metric border-0">
+            <div class="card-body text-center">
+                <i class="bi bi-grid-3x3-gap fs-2 text-warning"></i>
+                <h4 class="mt-1">{{ total_yards }}</h4>
+                <small class="text-muted">Patios/Bodegas</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow card-metric border-0">
+            <div class="card-body text-center">
+                <i class="bi bi-tools fs-2 text-secondary"></i>
+                <h4 class="mt-1">{{ total_equipment }}</h4>
+                <small class="text-muted">Equipos</small>
+                <div class="mt-1"><span class="badge bg-success">{{ active_equipment }} activos</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow card-metric {% if open_accidents > 0 %}border-danger border-2{% endif %}">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle fs-2 text-danger"></i>
+                <h4 class="mt-1">{{ open_accidents }}</h4>
+                <small class="text-muted">Accidentes Abiertos</small>
+                {% if critical_accidents > 0 %}
+                <div class="mt-1"><span class="badge bg-dark">{{ critical_accidents }} criticos</span></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fila 3: Graficos -->
 <div class="row mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card shadow">
-            <div class="card-header bg-dark text-white">
-                <i class="bi bi-graph-up"></i> Estado de Operaciones
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="statusChart"></canvas>
-                </div>
+            <div class="card-header bg-dark text-white"><i class="bi bi-graph-up"></i> Operaciones</div>
+            <div class="card-body" style="position: relative; height: 250px;">
+                <canvas id="statusChart"></canvas>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card shadow">
-            <div class="card-header bg-dark text-white">
-                <i class="bi bi-exclamation-triangle"></i> Nivel de Riesgo por Buque
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="riskChart"></canvas>
-                </div>
+            <div class="card-header bg-dark text-white"><i class="bi bi-exclamation-triangle"></i> Riesgo</div>
+            <div class="card-body" style="position: relative; height: 250px;">
+                <canvas id="riskChart"></canvas>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card shadow">
-            <div class="card-header bg-dark text-white">
-                <i class="bi bi-bell"></i> Alertas Recientes
+            <div class="card-header bg-dark text-white"><i class="fas fa-truck"></i> Camiones</div>
+            <div class="card-body" style="position: relative; height: 250px;">
+                <canvas id="trucksChart"></canvas>
             </div>
-            <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white"><i class="bi bi-lightbulb"></i> Recomendaciones</div>
+            <div class="card-body" style="max-height: 250px; overflow-y: auto;">
+                {% for type, title, msg in recommendations[:4] %}
+                <div class="alert alert-{% if type == 'danger' %}danger{% elif type == 'warning' %}warning{% elif type == 'info' %}info{% else %}success{% endif %} py-2 mb-2">
+                    <strong class="small">{{ title }}</strong><br>
+                    <small class="text-muted">{{ msg[:100] }}{% if msg|length > 100 %}...{% endif %}</small>
+                </div>
+                {% endfor %}
+                <a href="{{ url_for('recommendations') }}" class="btn btn-sm btn-outline-primary w-100">Ver todas</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fila 4: Alertas + Mercancia -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white"><i class="bi bi-bell"></i> Alertas Recientes</div>
+            <div class="card-body" style="max-height: 250px; overflow-y: auto;">
                 {% if recent_alerts %}
                     {% for alert in recent_alerts %}
                     <div class="alert alert-{% if alert.severity == 'high' %}danger{% elif alert.severity == 'medium' %}warning{% else %}info{% endif %} py-2 mb-2">
-                        <small class="fw-bold">{{ alert.ship.name }}</small><br>
+                        <small class="fw-bold">{{ alert.ship.name if alert.ship else 'Sistema' }}</small>
+                        {% if alert.alert_type == 'emergency' %}<span class="badge bg-dark ms-1">EMERGENCIA</span>{% endif %}<br>
                         <small>{{ alert.message }}</small>
                         <br><small class="text-muted">{{ alert.created_at.strftime('%d/%m %H:%M') }}</small>
                     </div>
@@ -109,32 +181,43 @@
             </div>
         </div>
     </div>
+    <div class="col-md-3">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white"><i class="bi bi-box-seam"></i> Mercancia</div>
+            <div class="card-body text-center">
+                <h2>{{ total_cargo }}</h2>
+                <small class="text-muted">Items registrados</small>
+                <hr>
+                <h4>{{ "%.1f"|format(total_weight) }} t</h4>
+                <small class="text-muted">Peso total</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white"><i class="bi bi-file-earmark-text"></i> Documentos</div>
+            <div class="card-body text-center">
+                {% if pending_docs > 0 %}
+                <div class="display-4 text-warning">{{ pending_docs }}</div>
+                <small class="text-muted">Documentos por vencer (30 dias)</small>
+                {% else %}
+                <div class="display-4 text-success"><i class="bi bi-check-circle"></i></div>
+                <small class="text-muted">Todos los documentos al dia</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- Tabla de riesgo -->
 <div class="row">
     <div class="col-12">
         <div class="card shadow">
-            <div class="card-header bg-dark text-white">
-                <i class="bi bi-exclamation-triangle"></i> Analisis de Riesgo por Buque
-            </div>
+            <div class="card-header bg-dark text-white"><i class="bi bi-exclamation-triangle"></i> Analisis de Riesgo por Buque</div>
             <div class="card-body">
-                <div class="input-group mb-3" style="max-width: 400px;">
-                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control table-search" data-target="riskTable"
-                           placeholder="Buscar buque, estado o nivel de riesgo...">
-                    <button class="btn btn-outline-secondary clear-search" type="button" title="Limpiar busqueda">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                </div>
-                <table class="table table-hover" id="riskTable" data-paginate="true">
+                <table class="table table-hover">
                     <thead>
-                        <tr>
-                            <th>Buque</th>
-                            <th>Fecha Llegada</th>
-                            <th>Estado</th>
-                            <th>Nivel de Riesgo</th>
-                            <th>Alertas</th>
-                        </tr>
+                        <tr><th>Buque</th><th>Fecha Llegada</th><th>Estado</th><th>Nivel de Riesgo</th><th>Alertas</th></tr>
                     </thead>
                     <tbody>
                         {% for item in risk_data %}
@@ -146,20 +229,15 @@
                                     {% if item.ship.status == 'pending' %}Pendiente{% elif item.ship.status == 'in_progress' %}En Proceso{% else %}Completado{% endif %}
                                 </span>
                             </td>
-                            <td>
-                                <span class="badge bg-{% if item.risk == 'alto' %}danger{% elif item.risk == 'medio' %}warning{% else %}success{% endif %} fs-6">
-                                    {{ item.risk|upper }}
-                                </span>
-                            </td>
+                            <td><span class="badge bg-{% if item.risk == 'alto' %}danger{% elif item.risk == 'medio' %}warning{% else %}success{% endif %} fs-6">{{ item.risk|upper }}</span></td>
                             <td>{{ item.alert_count }}</td>
                         </tr>
                         {% endfor %}
                         {% if not risk_data %}
-                        <tr class="empty-row"><td colspan="5" class="text-center text-muted">No hay buques registrados</td></tr>
+                        <tr><td colspan="5" class="text-center text-muted">No hay buques registrados</td></tr>
                         {% endif %}
                     </tbody>
                 </table>
-                <div id="riskTable-pagination"></div>
             </div>
         </div>
     </div>
@@ -168,51 +246,35 @@
 
 {% block scripts %}
 <script>
-    const ctx = document.getElementById('statusChart').getContext('2d');
-    new Chart(ctx, {
+    new Chart(document.getElementById('statusChart').getContext('2d'), {
         type: 'doughnut',
         data: {
             labels: ['Pendientes', 'En Proceso', 'Completados'],
-            datasets: [{
-                data: [{{ pending_ships }}, {{ in_progress_ships }}, {{ completed_ships }}],
-                backgroundColor: ['#ffc107', '#17a2b8', '#28a745'],
-                borderWidth: 2
-            }]
+            datasets: [{ data: [{{ pending_ships }}, {{ in_progress_ships }}, {{ completed_ships }}],
+                        backgroundColor: ['#ffc107', '#17a2b8', '#28a745'], borderWidth: 2 }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
     });
 
-    const ctxRisk = document.getElementById('riskChart').getContext('2d');
-    new Chart(ctxRisk, {
+    new Chart(document.getElementById('riskChart').getContext('2d'), {
         type: 'bar',
         data: {
             labels: ['Alto', 'Medio', 'Bajo'],
-            datasets: [{
-                label: 'Buques por nivel de riesgo',
-                data: [{{ risk_alto }}, {{ risk_medio }}, {{ risk_bajo }}],
-                backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
-                borderWidth: 1
-            }]
+            datasets: [{ label: 'Buques', data: [{{ risk_alto }}, {{ risk_medio }}, {{ risk_bajo }}],
+                        backgroundColor: ['#dc3545', '#ffc107', '#28a745'], borderWidth: 1 }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
-                }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                   scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+
+    new Chart(document.getElementById('trucksChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Disponible', 'En Transito', 'Mantenimiento'],
+            datasets: [{ data: [{{ available_trucks }}, {{ transit_trucks }}, {{ total_trucks - available_trucks - transit_trucks }}],
+                        backgroundColor: ['#28a745', '#17a2b8', '#ffc107'], borderWidth: 2 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
     });
 </script>
 {% endblock %}

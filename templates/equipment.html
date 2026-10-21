@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Equipos{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h4><i class="bi bi-tools"></i> Control de Equipos</h4>
+        <p class="text-muted">Gestion de maquinaria y equipos del puerto</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('export_equipos_excel') }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
+    </div>
+</div>
+
+{% if edit_equipment %}
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning text-dark"><i class="bi bi-pencil"></i> Editar Equipo</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('edit_equipment', equip_id=edit_equipment.id) }}">
+            <div class="row g-3">
+                <div class="col-md-2"><label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="name" value="{{ edit_equipment.name }}" required></div>
+                <div class="col-md-2"><label class="form-label">Tipo</label>
+                    <select class="form-select" name="equipment_type">
+                        {% for t in ['Grua','Montacargas','Apilador','Excavadora','Bulldozer','Generador','Compresor','Otro'] %}
+                        <option value="{{ t }}" {% if edit_equipment.equipment_type == t %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select></div>
+                <div class="col-md-2"><label class="form-label">Estado</label>
+                    <select class="form-select" name="status">
+                        {% for s in ['active','maintenance','offline'] %}
+                        <option value="{{ s }}" {% if edit_equipment.status == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select></div>
+                <div class="col-md-2"><label class="form-label">Ubicacion</label>
+                    <input type="text" class="form-control" name="location" value="{{ edit_equipment.location or '' }}"></div>
+                <div class="col-md-2"><label class="form-label">Ult. Mantenimiento</label>
+                    <input type="date" class="form-control" name="last_maintenance" value="{{ edit_equipment.last_maintenance.strftime('%Y-%m-%d') if edit_equipment.last_maintenance else '' }}"></div>
+                <div class="col-md-2"><label class="form-label">Prox. Mantenimiento</label>
+                    <input type="date" class="form-control" name="next_maintenance" value="{{ edit_equipment.next_maintenance.strftime('%Y-%m-%d') if edit_equipment.next_maintenance else '' }}"></div>
+                <div class="col-md-12"><button type="submit" class="btn btn-warning">Guardar Cambios</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-plus-circle"></i> Registrar Equipo</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('equipment') }}">
+            <div class="row g-3">
+                <div class="col-md-3"><label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="name" required></div>
+                <div class="col-md-2"><label class="form-label">Tipo</label>
+                    <select class="form-select" name="equipment_type">
+                        {% for t in ['Grua','Montacargas','Apilador','Excavadora','Bulldozer','Generador','Compresor','Otro'] %}
+                        <option value="{{ t }}">{{ t }}</option>
+                        {% endfor %}
+                    </select></div>
+                <div class="col-md-2"><label class="form-label">Ubicacion</label>
+                    <input type="text" class="form-control" name="location"></div>
+                <div class="col-md-2"><label class="form-label">Ult. Mantenimiento</label>
+                    <input type="date" class="form-control" name="last_maintenance"></div>
+                <div class="col-md-2"><label class="form-label">Prox. Mantenimiento</label>
+                    <input type="date" class="form-control" name="next_maintenance"></div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Registrar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Ubicacion</th><th>Ult. Mant.</th><th>Prox. Mant.</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+                {% for e in equipment %}
+                <tr>
+                    <td>{{ e.id }}</td>
+                    <td><strong>{{ e.name }}</strong></td>
+                    <td>{{ e.equipment_type }}</td>
+                    <td>
+                        {% if e.status == 'active' %}<span class="badge bg-success">Activo</span>
+                        {% elif e.status == 'maintenance' %}<span class="badge bg-warning text-dark">Mantenimiento</span>
+                        {% else %}<span class="badge bg-secondary">Fuera de linea</span>{% endif %}
+                    </td>
+                    <td>{{ e.location or 'N/A' }}</td>
+                    <td>{{ e.last_maintenance.strftime('%d/%m/%Y') if e.last_maintenance else 'N/A' }}</td>
+                    <td>
+                        {{ e.next_maintenance.strftime('%d/%m/%Y') if e.next_maintenance else 'N/A' }}
+                        {% if e.next_maintenance and e.next_maintenance < today %}
+                        <span class="badge bg-danger ms-1">Vencido</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('edit_equipment', equip_id=e.id) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
+                        <a href="{{ url_for('delete_equipment', equip_id=e.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminar equipo?')"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-muted">No hay equipos registrados</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

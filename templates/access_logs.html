@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Control de Accesos{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h4><i class="bi bi-journal-text"></i> Control de Accesos</h4>
+        <p class="text-muted">Historial de accesos y actividad de usuarios</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <span class="badge bg-dark fs-6">Solo Administradores</span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>ID</th><th>Fecha/Hora</th><th>Usuario</th><th>Accion</th><th>IP</th><th>Detalles</th></tr>
+            </thead>
+            <tbody>
+                {% for log in logs.items %}
+                <tr>
+                    <td>{{ log.id }}</td>
+                    <td>{{ log.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    <td>
+                        {% if log.user %}
+                        <i class="bi bi-person"></i> <strong>{{ log.user.username }}</strong>
+                        <span class="badge bg-secondary">{{ log.user.role }}</span>
+                        {% else %}<span class="text-muted">Desconocido</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if log.action == 'login' %}<span class="badge bg-success">Login</span>
+                        {% elif log.action == 'logout' %}<span class="badge bg-secondary">Logout</span>
+                        {% elif log.action == 'failed_login' %}<span class="badge bg-danger">Login Fallido</span>
+                        {% else %}<span class="badge bg-info">{{ log.action }}</span>{% endif %}
+                    </td>
+                    <td><code>{{ log.ip_address or 'N/A' }}</code></td>
+                    <td><small class="text-muted">{{ log.details or '' }}</small></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted">No hay registros de acceso</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if logs.pages > 1 %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if logs.has_prev %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('access_logs', page=logs.prev_num) }}">&laquo; Anterior</a></li>
+                {% endif %}
+                {% for p in logs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                    <li class="page-item {% if p == logs.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('access_logs', page=p) }}">{{ p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                {% if logs.has_next %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('access_logs', page=logs.next_num) }}">Siguiente &raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

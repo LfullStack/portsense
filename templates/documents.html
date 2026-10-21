@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Documentos{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h4><i class="bi bi-file-earmark-text"></i> Control Documental</h4>
+        <p class="text-muted">Gestion de documentos y certificaciones</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-sm btn-outline-info" onclick="document.getElementById('docStats').classList.toggle('d-none')">
+            <i class="bi bi-bar-chart"></i> Estadisticas
+        </button>
+    </div>
+</div>
+
+<div id="docStats" class="d-none mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card text-bg-success">
+                <div class="card-body text-center">
+                    <h5>{{ documents|selectattr('is_valid')|list|length }}</h5>
+                    <small>Validos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-secondary">
+                <div class="card-body text-center">
+                    <h5>{{ documents|rejectattr('is_valid')|list|length }}</h5>
+                    <small>Invalidos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-warning">
+                <div class="card-body text-center">
+                    <h5>{{ documents|selectattr('is_valid')|selectattr('expires_at')|list|length }}</h5>
+                    <small>Con vencimiento</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-danger">
+                <div class="card-body text-center">
+                    <h5>{{ documents|selectattr('is_valid')|selectattr('expires_at')|selectattr('expires_at')|list|length }}</h5>
+                    <small>Registrados</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-plus-circle"></i> Registrar Documento</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('documents') }}">
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-select" name="doc_type" required>
+                        {% for t in ['Pasaporte','Licencia','Certificacion','Permiso','Seguro','Contrato','Auditoria','Otro'] %}
+                        <option value="{{ t }}">{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Titulo</label>
+                    <input type="text" class="form-control" name="title" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Asociado a Buque</label>
+                    <select class="form-select" name="ship_id">
+                        <option value="">Ninguno</option>
+                        {% for s in ships %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Personal</label>
+                    <select class="form-select" name="personnel_id">
+                        <option value="">Ninguno</option>
+                        {% for p in personnel_list %}
+                        <option value="{{ p.id }}">{{ p.first_name }} {{ p.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Vence</label>
+                    <input type="date" class="form-control" name="expires_at">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_valid" checked>
+                        <label class="form-check-label">Valido</label>
+                    </div>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Agregar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>ID</th><th>Tipo</th><th>Titulo</th><th>Asociado a</th><th>Vence</th><th>Estado</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+                {% for d in documents %}
+                <tr>
+                    <td>{{ d.id }}</td>
+                    <td><span class="badge bg-secondary">{{ d.doc_type }}</span></td>
+                    <td><strong>{{ d.title }}</strong></td>
+                    <td>
+                        {% if d.ship %}<i class="fas fa-ship"></i> {{ d.ship.name }}
+                        {% elif d.personnel %}<i class="bi bi-person"></i> {{ d.personnel.first_name }} {{ d.personnel.last_name }}
+                        {% elif d.truck %}<i class="fas fa-truck"></i> {{ d.truck.plate_number }}
+                        {% else %}General{% endif %}
+                    </td>
+                    <td>
+                        {{ d.expires_at.strftime('%d/%m/%Y') if d.expires_at else 'Sin vencimiento' }}
+                        {% if d.expires_at and d.expires_at < today and d.is_valid %}
+                        <span class="badge bg-danger ms-1">Vencido</span>
+                        {% elif d.expires_at and (d.expires_at - today).days <= 30 and d.expires_at >= today and d.is_valid %}
+                        <span class="badge bg-warning text-dark ms-1">Por vencer</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if d.is_valid %}<span class="badge bg-success">Valido</span>
+                        {% else %}<span class="badge bg-danger">Invalido</span>{% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-{{ 'danger' if d.is_valid else 'success' }}"
+                                onclick="toggleDoc({{ d.id }})">
+                            {{ 'Invalidar' if d.is_valid else 'Validar' }}
+                        </button>
+                        <a href="{{ url_for('delete_document', doc_id=d.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminar documento?')"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted">No hay documentos registrados</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleDoc(id) {
+    fetch('/documents/toggle/' + id).then(r => r.json()).then(() => location.reload());
+}
+</script>
+{% endblock %}

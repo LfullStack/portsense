@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Trazabilidad{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h4 class="proto-title"><i class="bi bi-diagram-3"></i> Trazabilidad</h4>
+    <p class="proto-sub">Consulta el estado de un envio por su codigo y revisa su historial completo</p>
+</div>
+
+<form class="track-input" method="GET" action="{{ url_for('trace') }}">
+    <input type="text" name="q" value="{{ q or '' }}" placeholder="Codigo de seguimiento, tipo de carga o nombre del buque (ej: 12, Contenedores, MV Pacific Star)">
+    <button type="submit" class="btn-proto"><i class="bi bi-search"></i> Buscar</button>
+</form>
+
+{% if search_results %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-list-check"></i> Resultados de la busqueda ({{ search_results|length }})</div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-light"><tr><th>ID</th><th>Carga</th><th>Buque</th><th>Cantidad</th><th>Ubicacion</th><th>Destino</th><th></th></tr></thead>
+            <tbody>
+                {% for c in search_results %}
+                <tr>
+                    <td><strong>#{{ c.id }}</strong></td>
+                    <td>{{ c.cargo_type }}</td>
+                    <td>{{ c.ship.name }}</td>
+                    <td>{{ c.quantity }} u · {{ c.weight }} t</td>
+                    <td><span class="tag ok">{{ c.location or 'Buque' }}</span></td>
+                    <td>{{ c.destination or '—' }}</td>
+                    <td><a href="{{ url_for('trace', q=c.id) }}" class="btn btn-sm btn-outline-secondary">Ver trazabilidad</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if tracked %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-box-seam"></i> Envio #{{ tracked.id }} · {{ tracked.cargo_type }} — {{ tracked.ship.name }}</span>
+        <span class="tag {{ 'warn' if tracked.status == 'stored' else 'ok' }}">{{ tracked.status }}</span>
+    </div>
+    <div class="card-body">
+        <p class="panel-title mb-1">Historial del envio</p>
+        <div class="timeline">
+            <div class="tl-item">
+                <div class="tl-dot"></div>
+                <div class="tl-body">
+                    <b>Carga verificada en buque</b>
+                    <span>{{ tracked.ship.arrival_date.strftime('%d/%m/%Y') }} · {{ tracked.ship.name }}</span>
+                </div>
+            </div>
+            {% for t in tracked_traces %}
+            <div class="tl-item">
+                <div class="tl-dot"></div>
+                <div class="tl-body">
+                    <b>Despachado: {{ t.from_location or 'Buque' }} → {{ t.to_location }}</b>
+                    <span>{{ t.moved_at.strftime('%d/%m %H:%M') }} · Responsable: {{ t.moved_by or '—' }}{% if t.notes %} · {{ t.notes }}{% endif %}</span>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="tl-item">
+                <div class="tl-dot pending"></div>
+                <div class="tl-body">
+                    <b>Entrega en {{ tracked.destination or 'destino final' }}</b>
+                    <span>Pendiente</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-file-earmark-text"></i> Documentos del envio</div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-light"><tr><th>Documento</th><th>Tipo</th><th>Estado</th><th>Vence</th></tr></thead>
+            <tbody>
+                {% for d in tracked_docs %}
+                <tr>
+                    <td><strong>{{ d.title }}</strong></td>
+                    <td>{{ d.doc_type }}</td>
+                    <td>
+                        {% if d.is_valid and (not d.expires_at or d.expires_at >= today) %}<span class="tag ok">Vigente</span>
+                        {% elif d.is_valid %}<span class="tag warn">Por vencer</span>
+                        {% else %}<span class="tag bad">Rechazado</span>{% endif %}
+                    </td>
+                    <td>{{ d.expires_at.strftime('%d/%m/%Y') if d.expires_at else '—' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-muted py-3">No hay documentos asociados a este buque</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-box-seam"></i> Mercancia transportada</div>
+    <div class="card-body">
+        <div class="info-grid">
+            <div><b>MP-{{ '%04d'|format(tracked.id) }}</b><span>Codigo interno</span></div>
+            <div><b>{{ tracked.quantity }}</b><span>Cantidad</span></div>
+            <div><b>{{ tracked.weight }} t</b><span>Peso</span></div>
+            <div><b>{{ tracked.cargo_type }}</b><span>Tipo de carga</span></div>
+            <div><b>{{ tracked.location or 'Buque' }}</b><span>Ubicacion actual</span></div>
+            <div><b>{{ tracked.destination or '—' }}</b><span>Destino</span></div>
+            <div>
+                {% if is_hazmat %}<span class="risk-badge">Peligrosa · Material regulado</span>
+                {% else %}<span class="tag ok">Carga general</span>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_hazmat %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-shield-exclamation"></i> Ficha de seguridad (SDS)</div>
+    <div class="card-body">
+        <div class="ghs-row">
+            <div class="ghs"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2c1 4-3 5-3 9a3 3 0 0 0 6 0c0-2-1-3-1-3s2 1 2 5a5 5 0 0 1-10 0c0-6 6-6 6-11Z" stroke="#C6553B" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+            <div class="ghs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3v11M12 19v.5" stroke="#C6553B" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+        </div>
+        <div class="sds-section"><h4>Manejo y almacenamiento</h4>
+            <p>Mantener en area ventilada, lejos de fuentes de calor e ignicion. Envase cerrado hermeticamente.</p></div>
+        <div class="sds-section"><h4>En caso de derrame</h4>
+            <p>Aislar la zona, eliminar fuentes de ignicion, contener con material absorbente inerte. No usar agua a presion.</p></div>
+        <div class="sds-section"><h4>En caso de ruptura del empaque o volcamiento</h4>
+            <p>Suspender el transporte, notificar de inmediato al operador logistico y trasvasar a un contenedor de respaldo homologado.</p></div>
+        <div class="sds-section"><h4>EPP requerido</h4>
+            <p>Guantes resistentes a solventes, gafas de seguridad, careta y calzado antideslizante.</p></div>
+        <div class="sds-section"><h4>Primeros auxilios</h4>
+            <p>Contacto con piel/ojos: lavar con agua abundante 15 min. Inhalacion: trasladar a aire libre y buscar atencion medica.</p></div>
+    </div>
+</div>
+{% endif %}
+
+{% elif q and not search_results %}
+<div class="alert alert-warning">No se encontro ningun envio con "<strong>{{ q }}</strong>". Prueba con el numero de ID (ej: 12), el tipo de carga o el nombre del buque.</div>
+{% endif %}
+
+<!-- Mover mercancia -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-arrow-left-right"></i> Mover Mercancia</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('trace') }}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Mercancia</label>
+                    <select class="form-select" name="cargo_id" required>
+                        <option value="">Seleccionar...</option>
+                        {% for c in cargo_items %}
+                        <option value="{{ c.id }}" {% if tracked and tracked.id == c.id %}selected{% endif %}>{{ c.cargo_type }} - {{ c.ship.name }} ({{ c.location or 'Sin ubicacion' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Ubicacion Destino</label>
+                    <input type="text" class="form-control" name="to_location" placeholder="Ej: Patio A1, Bodega 3..." required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Responsable</label>
+                    <input type="text" class="form-control" name="moved_by" value="{{ current_user.username }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Notas</label>
+                    <input type="text" class="form-control" name="notes">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-proto w-100">Mover</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Historial general -->
+<div class="card">
+    <div class="card-header"><i class="bi bi-clock-history"></i> Historial general de movimientos</div>
+    <div class="card-body p-0">
+        <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light" style="position:sticky;top:0">
+                    <tr><th>Fecha</th><th>Mercancia</th><th>De</th><th>Hacia</th><th>Responsable</th><th>Notas</th></tr>
+                </thead>
+                <tbody>
+                    {% for t in traces %}
+                    <tr>
+                        <td>{{ t.moved_at.strftime('%d/%m %H:%M') }}</td>
+                        <td><strong>{{ t.cargo.cargo_type }}</strong> <small class="text-muted">({{ t.cargo.ship.name }})</small></td>
+                        <td><span class="tag warn">{{ t.from_location or 'N/A' }}</span></td>
+                        <td><span class="tag ok">{{ t.to_location }}</span></td>
+                        <td>{{ t.moved_by or 'N/A' }}</td>
+                        <td><small class="text-muted">{{ t.notes or '' }}</small></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-muted text-center py-3">No hay movimientos registrados</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

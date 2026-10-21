@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% block title %}Rastreo y Ultima Milla{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="proto-title"><i class="bi bi-geo-alt"></i> Rastreo y ultima milla</h4>
+        <p class="proto-sub">Ubicacion en tiempo real de camiones en ruta y reportes de conductores</p>
+    </div>
+    <div class="d-flex gap-2">
+        <span class="kpi-mini"><div class="stat-label">En ruta</div><div class="stat-num">{{ deliveries|length }}</div></span>
+        <span class="kpi-mini"><div class="stat-label">Incidencias</div><div class="stat-num" style="color:#c6553b">{{ deliveries|selectattr('state', 'equalto', 'incident')|list|length }}</div></span>
+        <span class="kpi-mini"><div class="stat-label">Retrasos</div><div class="stat-num" style="color:#e7924a">{{ deliveries|selectattr('state', 'equalto', 'delay')|list|length }}</div></span>
+    </div>
+</div>
+
+<div class="subtabs" id="rastreoTabs">
+    <button class="btn-subtab active" data-sub="opView" onclick="switchSub('opView', this)">Vista operaciones</button>
+    <button class="btn-subtab" data-sub="driverView" onclick="switchSub('driverView', this)">Vista conductor</button>
+</div>
+
+<!-- VISTA OPERACIONES -->
+<div class="subview active" id="opView">
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-map"></i> Mapa de operaciones — camiones, patios y buques</div>
+        <div class="card-body">
+            <div id="map" class="mapa-contenedor"></div>
+            <div class="legend mt-2">
+                <span><i style="background:#e7924a"></i>Camion en ruta</span>
+                <span><i style="background:#c6553b"></i>Con incidencia</span>
+                <span><i style="background:#1e8a7a"></i>Patio / Bodega</span>
+                <span><i style="background:#3b82f6"></i>Buque en puerto</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-truck"></i> Entregas en ruta</div>
+        <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>Vehiculo</th><th>Conductor</th><th>Carga</th><th>Destino</th><th>Ultima ubicacion</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    {% for d in deliveries %}
+                    <tr>
+                        <td><strong>{{ d.truck.plate_number }}</strong> <small class="text-muted">({{ d.truck.truck_type }})</small></td>
+                        <td>{{ d.truck.driver.first_name ~ ' ' ~ d.truck.driver.last_name if d.truck.driver else 'Sin asignar' }}</td>
+                        <td>{{ d.cargo.cargo_type if d.cargo else '—' }}</td>
+                        <td>{{ d.cargo.destination if d.cargo else '—' }}</td>
+                        <td><small>{{ d.truck.last_location or 'Sin reporte' }}{% if d.truck.last_report_at %} · {{ d.truck.last_report_at.strftime('%H:%M') }}{% endif %}</small></td>
+                        <td>
+                            {% if d.state == 'incident' %}<span class="tag bad">Incidencia reportada</span>
+                            {% elif d.state == 'delay' %}<span class="tag warn">Retrasado</span>
+                            {% else %}<span class="tag ok">En hora</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center text-muted py-3">No hay camiones en ruta</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-filetype-csv"></i> Importar reportes desde Google Sheets</div>
+        <div class="card-body">
+            <p class="text-muted small mb-2">Descarga la hoja de respuestas como CSV (Archivo → Descargar → Valores separados por comas) y subela aqui.</p>
+            <form method="POST" action="{{ url_for('import_route_csv') }}" enctype="multipart/form-data" class="d-flex gap-2 flex-wrap">
+                <input type="file" name="csv_file" accept=".csv,text/csv" class="form-control" style="max-width:420px" required>
+                <button type="submit" class="btn btn-dark"><i class="bi bi-upload"></i> Cargar reportes</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><i class="bi bi-clock-history"></i> Eventos reportados por conductores</div>
+        <div class="card-body">
+            <div class="timeline" id="opLog">
+                {% for e in events %}
+                <div class="tl-item">
+                    <div class="tl-dot {{ 'bad' if e.severity == 'bad' else 'warn' if e.severity == 'warn' else '' }}"></div>
+                    <div class="tl-body">
+                        <b>{{ e.truck.plate_number if e.truck else (e.driver_name or '—') }} · {{ e.title }}
+                            {% if e.severity == 'bad' %}<span class="tag bad">Critico</span>
+                            {% elif e.severity == 'warn' %}<span class="tag warn">Atencion</span>
+                            {% else %}<span class="tag ok">Informativo</span>{% endif %}
+                        </b>
+                        <span>{{ e.detail or '' }} · {{ e.created_at.strftime('%H:%M') }} · {{ e.created_at.strftime('%d/%m') }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">Aun no hay eventos reportados.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- VISTA CONDUCTOR -->
+<div class="subview" id="driverView">
+    <div class="card driver-card mb-4">
+        <div class="card-header"><i class="bi bi-person-vcard"></i> Reportar estado</div>
+        <div class="card-body">
+            <form id="driverForm" method="POST" action="{{ url_for('rastreo') }}">
+                <label class="field-label">Vehiculo</label>
+                <select class="fld" name="truck_id" id="drVehiculo" required>
+                    {% for t in trucks %}
+                    <option value="{{ t.id }}">{{ t.plate_number }} — {{ t.truck_type }}</option>
+                    {% endfor %}
+                </select>
+
+                <label class="field-label">Tipo de evento</label>
+                <select class="fld" name="event_type" id="drTipo" onchange="renderDriverFields()">
+                    <option value="ubicacion">Actualizar ubicacion</option>
+                    <option value="peaje">Paso por peaje</option>
+                    <option value="control">Control policial</option>
+                    <option value="incidente">Incidente (accidente / averia / retraso)</option>
+                </select>
+
+                <div id="drFields"></div>
+
+                <button type="submit" class="big-btn"><i class="bi bi-send"></i> Enviar reporte</button>
+                <p id="drConfirm" style="display:none;font-size:0.82rem;color:#1e8a7a;margin-top:10px;font-weight:600">✓ Reporte enviado</p>
+            </form>
+        </div>
+    </div>
+    <div class="card driver-card">
+        <div class="card-header"><i class="bi bi-journal-text"></i> Ultimos reportes</div>
+        <div class="card-body">
+            <div class="timeline" id="driverLog">
+                {% for e in my_events %}
+                <div class="tl-item">
+                    <div class="tl-dot {{ 'bad' if e.severity == 'bad' else 'warn' if e.severity == 'warn' else '' }}"></div>
+                    <div class="tl-body">
+                        <b>{{ e.title }}</b>
+                        <span>{{ e.detail or '' }} · {{ e.created_at.strftime('%H:%M') }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">Sin reportes aun.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+function switchSub(id, btn) {
+    document.querySelectorAll('#rastreoTabs .btn-subtab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.subview').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(id).classList.add('active');
+    if (id === 'opView' && window._map) {
+        setTimeout(() => window._map.invalidateSize(), 100);
+    }
+}
+
+function renderDriverFields() {
+    const tipo = document.getElementById('drTipo').value;
+    const c = document.getElementById('drFields');
+    if (tipo === 'ubicacion') {
+        c.innerHTML = `<label class="field-label">Ubicacion actual</label>
+            <input class="fld" name="location_text" id="fUbicacion" placeholder="Ej. Via 40, km 12, Manzanillo">
+            <input type="hidden" name="lat" id="fLat">
+            <input type="hidden" name="lng" id="fLng">
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="useMyLocation()">
+                <i class="bi bi-crosshair"></i> Usar mi ubicacion GPS
+            </button>
+            <small id="gpsMsg" class="text-muted d-block mt-1"></small>`;
+    } else if (tipo === 'peaje') {
+        c.innerHTML = `<label class="field-label">Peaje</label>
+            <input class="fld" name="peaje_name" placeholder="Ej. Peaje Armeria">
+            <label class="field-label">Hora de paso</label>
+            <input class="fld" name="peaje_time" type="time">`;
+    } else if (tipo === 'control') {
+        c.innerHTML = `<label class="field-label">Motivo del control</label>
+            <select class="fld" name="control_reason">
+                <option>Revision de documentos</option><option>Control rutinario</option>
+                <option>Accidente en la via</option><option>Otro</option>
+            </select>
+            <label class="field-label">Autoridad</label>
+            <input class="fld" name="authority" placeholder="Ej. Policia de Transito - Manzanillo">
+            <label class="field-label">Resultado</label>
+            <select class="fld" name="result">
+                <option value="curso">En curso</option><option value="ok">Liberado sin novedad</option>
+                <option value="multa">Con comparendo/multa</option><option value="apoyo">Requiere apoyo</option>
+            </select>
+            <label class="field-label">Notas</label>
+            <textarea class="fld" name="notes" rows="2" placeholder="Detalles adicionales"></textarea>`;
+    } else {
+        c.innerHTML = `<label class="field-label">Tipo de incidente</label>
+            <select class="fld" name="incident_type"><option>Accidente</option><option>Averia mecanica</option><option>Retraso general</option></select>
+            <label class="field-label">Descripcion</label>
+            <textarea class="fld" name="incident_desc" rows="2" placeholder="Que ocurrio?"></textarea>
+            <label class="field-label mt-2"><input type="checkbox" name="assistance" value="on"> Requiere asistencia inmediata</label>`;
+    }
+}
+renderDriverFields();
+
+function useMyLocation() {
+    const msg = document.getElementById('gpsMsg');
+    if (!navigator.geolocation) {
+        msg.textContent = 'Geolocalizacion no disponible en este dispositivo.';
+        return;
+    }
+    msg.textContent = 'Obteniendo ubicacion...';
+    navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('fLat').value = pos.coords.latitude.toFixed(6);
+        document.getElementById('fLng').value = pos.coords.longitude.toFixed(6);
+        const inp = document.getElementById('fUbicacion');
+        if (!inp.value) inp.value = `GPS: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+        msg.textContent = '✓ Ubicacion GPS capturada.';
+    }, err => {
+        msg.textContent = 'No se pudo obtener la ubicacion: ' + err.message;
+    }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+document.getElementById('driverForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    const form = this;
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                const c = document.getElementById('drConfirm');
+                c.style.display = 'block';
+                setTimeout(() => c.style.display = 'none', 2500);
+                setTimeout(() => location.reload(), 1200);
+            }
+        })
+        .catch(() => form.submit());
+});
+
+/* ============ MAPA LEAFLET ============ */
+const map = L.map('map').setView([19.15, -104.2], 11);
+window._map = map;
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+
+function dotIcon(color, label) {
+    return L.divIcon({
+        className: '',
+        html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>
+               <div class="marker-plate" style="color:#16232b;background:rgba(255,255,255,.85);padding:1px 5px;border-radius:4px;margin-top:2px;white-space:nowrap">${label}</div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+    });
+}
+function squareIcon(color, label) {
+    return L.divIcon({
+        className: '',
+        html: `<div style="background:${color};width:14px;height:14px;border-radius:3px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>
+               <div class="marker-plate" style="color:#16232b;background:rgba(255,255,255,.85);padding:1px 5px;border-radius:4px;margin-top:2px;white-space:nowrap">${label}</div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+    });
+}
+
+fetch('{{ url_for("trucks_geo") }}')
+    .then(r => r.json())
+    .then(data => {
+        const bounds = [];
+        const port = data.port;
+        L.marker([port.lat, port.lng], {
+            icon: L.divIcon({
+                className: '',
+                html: '<div style="font-size:22px;text-shadow:0 1px 3px #fff">⚓</div>',
+                iconSize: [24, 24], iconAnchor: [12, 12]
+            })
+        }).addTo(map).bindPopup('<b>Puerto</b><br>Terminal principal');
+
+        (data.ships || []).forEach(s => {
+            L.marker([s.lat, s.lng], { icon: squareIcon('#3b82f6', s.name) })
+                .addTo(map)
+                .bindPopup(`<b>${s.name}</b><br>Estado: ${s.status}<br>ETA: ${s.eta}`);
+            bounds.push([s.lat, s.lng]);
+        });
+
+        (data.yards || []).forEach(y => {
+            L.marker([y.lat, y.lng], { icon: squareIcon('#1e8a7a', y.name) })
+                .addTo(map)
+                .bindPopup(`<b>${y.name}</b><br>${y.type === 'yard' ? 'Patio' : 'Bodega'} · ${y.location}<br>Ocupacion: ${y.occupancy}/${y.capacity} t`);
+            bounds.push([y.lat, y.lng]);
+        });
+
+        (data.trucks || []).forEach(t => {
+            const color = t.severity === 'bad' ? '#c6553b' : t.severity === 'warn' ? '#e7924a' : '#e7924a';
+            L.marker([t.lat, t.lng], { icon: dotIcon(color, t.plate) })
+                .addTo(map)
+                .bindPopup(`<b>${t.plate}</b> (${t.type})<br>Conductor: ${t.driver}<br>Destino: ${t.destination}<br>Ultima ubicacion: ${t.last_location}${t.updated ? ' · ' + t.updated : ''}${t.last_event ? '<br>Ultimo evento: ' + t.last_event : ''}`);
+            bounds.push([t.lat, t.lng]);
+            L.polyline([[port.lat, port.lng], [t.lat, t.lng]], {
+                color: '#2a5a63', weight: 2, dashArray: '4 5', opacity: 0.7
+            }).addTo(map);
+        });
+
+        if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
+    });
+</script>
+{% endblock %}

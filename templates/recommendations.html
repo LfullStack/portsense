@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Recomendaciones{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h4><i class="bi bi-lightbulb"></i> Recomendaciones Inteligentes</h4>
+        <p class="text-muted">Analisis automatico del estado operativo con sugerencias de accion</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('recommendations') }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar Analisis
+        </a>
+    </div>
+</div>
+
+{% set icon_map = {'danger':'bi-exclamation-octagon-fill text-danger', 'warning':'bi-exclamation-triangle-fill text-warning', 'info':'bi-info-circle-fill text-primary', 'success':'bi-check-circle-fill text-success'} %}
+{% set border_map = {'danger':'border-danger', 'warning':'border-warning', 'info':'border-primary', 'success':'border-success'} %}
+
+<div class="row">
+    {% for type, title, message in recommendations %}
+    <div class="col-md-6 mb-3">
+        <div class="card {{ border_map.get(type, '') }} border-start border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-start">
+                    <i class="bi {{ icon_map.get(type, 'bi-info-circle') }} fs-3 me-3 mt-1"></i>
+                    <div>
+                        <h6 class="card-title">{{ title }}</h6>
+                        <p class="card-text text-muted mb-0">{{ message }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card mt-4">
+    <div class="card-header"><i class="bi bi-gear"></i> Resumen del Sistema</div>
+    <div class="card-body">
+        <p>Este analisis se genera automaticamente basado en las siguientes reglas:</p>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><i class="bi bi-person-badge text-warning me-2"></i> Conductores con licencia por vencer en 30 dias</li>
+            <li class="list-group-item"><i class="bi bi-tools text-danger me-2"></i> Equipos con mantenimiento atrasado</li>
+            <li class="list-group-item"><i class="bi bi-grid-3x3-gap text-warning me-2"></i> Patios y bodegas con ocupacion mayor al 85%</li>
+            <li class="list-group-item"><i class="bi bi-exclamation-triangle text-info me-2"></i> Accidentes pendientes de seguimiento</li>
+            <li class="list-group-item"><i class="bi bi-clipboard-check text-danger me-2"></i> Seguimientos de accidentes con fecha vencida</li>
+            <li class="list-group-item"><i class="bi bi-file-earmark-text text-warning me-2"></i> Documentos que vencen en 30 dias</li>
+            <li class="list-group-item"><i class="bi bi-truck text-info me-2"></i> Camiones en mantenimiento</li>
+            <li class="list-group-item"><i class="bi bi-ship text-info me-2"></i> Llegadas de buques programadas para hoy</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

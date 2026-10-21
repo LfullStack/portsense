@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Conductores{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h4><i class="bi bi-person-badge"></i> Registro de Conductores</h4>
+        <p class="text-muted">Gestion de conductores y licencias</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('export_conductores_excel') }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
+    </div>
+</div>
+
+{% if edit_driver %}
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning text-dark"><i class="bi bi-pencil"></i> Editar Conductor</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('edit_driver', driver_id=edit_driver.id) }}">
+            <div class="row g-3">
+                <div class="col-md-2"><label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="first_name" value="{{ edit_driver.first_name }}" required></div>
+                <div class="col-md-2"><label class="form-label">Apellido</label>
+                    <input type="text" class="form-control" name="last_name" value="{{ edit_driver.last_name }}" required></div>
+                <div class="col-md-2"><label class="form-label">Licencia</label>
+                    <input type="text" class="form-control" name="license_number" value="{{ edit_driver.license_number }}" required></div>
+                <div class="col-md-2"><label class="form-label">Vence</label>
+                    <input type="date" class="form-control" name="license_expiry" value="{{ edit_driver.license_expiry.strftime('%Y-%m-%d') if edit_driver.license_expiry else '' }}"></div>
+                <div class="col-md-2"><label class="form-label">Telefono</label>
+                    <input type="text" class="form-control" name="phone" value="{{ edit_driver.phone or '' }}"></div>
+                <div class="col-md-2"><label class="form-label">Estado</label>
+                    <select class="form-select" name="status">
+                        {% for s in ['active','inactive','suspended'] %}
+                        <option value="{{ s }}" {% if edit_driver.status == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select></div>
+                <div class="col-md-12"><button type="submit" class="btn btn-warning">Guardar Cambios</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-plus-circle"></i> Registrar Conductor</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('drivers') }}">
+            <div class="row g-3">
+                <div class="col-md-2"><label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="first_name" required></div>
+                <div class="col-md-2"><label class="form-label">Apellido</label>
+                    <input type="text" class="form-control" name="last_name" required></div>
+                <div class="col-md-2"><label class="form-label">Licencia</label>
+                    <input type="text" class="form-control" name="license_number" required></div>
+                <div class="col-md-2"><label class="form-label">Vence</label>
+                    <input type="date" class="form-control" name="license_expiry"></div>
+                <div class="col-md-2"><label class="form-label">Telefono</label>
+                    <input type="text" class="form-control" name="phone"></div>
+                <div class="col-md-2"><label class="form-label">Estado</label>
+                    <select class="form-select" name="status">
+                        <option value="active">Activo</option>
+                        <option value="inactive">Inactivo</option>
+                        <option value="suspended">Suspendido</option>
+                    </select></div>
+                <div class="col-md-12"><button type="submit" class="btn btn-primary">Registrar</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>ID</th><th>Nombre</th><th>Licencia</th><th>Vence</th><th>Telefono</th><th>Estado</th><th>Camion</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+                {% for d in drivers %}
+                {% set lic_expired = d.license_expiry and d.license_expiry < today %}
+                {% set lic_soon = d.license_expiry and not lic_expired and (d.license_expiry - today).days <= 30 %}
+                <tr>
+                    <td>{{ d.id }}</td>
+                    <td><strong>{{ d.first_name }} {{ d.last_name }}</strong></td>
+                    <td>{{ d.license_number }}</td>
+                    <td>
+                        {{ d.license_expiry.strftime('%d/%m/%Y') if d.license_expiry else 'N/A' }}
+                        {% if lic_expired %}<span class="badge bg-danger ms-1">Vencida</span>
+                        {% elif lic_soon %}<span class="badge bg-warning text-dark ms-1">Por vencer</span>{% endif %}
+                    </td>
+                    <td>{{ d.phone or 'N/A' }}</td>
+                    <td>
+                        {% if d.status == 'active' %}<span class="badge bg-success">Activo</span>
+                        {% elif d.status == 'inactive' %}<span class="badge bg-secondary">Inactivo</span>
+                        {% else %}<span class="badge bg-danger">Suspendido</span>{% endif %}
+                    </td>
+                    <td>{{ d.trucks[0].plate_number if d.trucks else 'Sin asignar' }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_driver', driver_id=d.id) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
+                        <a href="{{ url_for('delete_driver', driver_id=d.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminar conductor?')"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-muted">No hay conductores registrados</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+    window._today = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}

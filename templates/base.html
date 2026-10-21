@@ -5,66 +5,130 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PortuSense - {% block title %}{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!--Colocar el icono en la pestaña del navegador-->
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="icon" type="image/png"
+          href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        .badge-critical { background-color: #dc3545; }
+        .alert-indicator { position: absolute; top: 4px; right: 6px; font-size: 0.6rem; }
+    </style>
 </head>
 <body>
     {% if current_user.is_authenticated %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="{{ url_for('dashboard') }}">
-                PortuSense
+
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">
+        <i class="bi bi-list"></i>
+    </button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <a href="{{ url_for('dashboard') }}">
+                <i class="fas fa-anchor"></i> PortuSense
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">
-                            <i class="bi bi-speedometer2"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('ships') }}">
-                            <i class="fas fa-ship"></i> Buques
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('cargo') }}">
-                            <i class="bi bi-box-seam"></i> Mercancias
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('alerts') }}">
-                            <i class="bi bi-bell"></i> Alertas
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('reports') }}">
-                            <i class="bi bi-graph-up"></i> Reportes
-                        </a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <span class="nav-link text-light">
-                            <i class="bi bi-person-circle"></i>
-                            {{ current_user.username }} ({{ current_user.role }})
-                        </span>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">
-                            <i class="bi bi-box-arrow-right"></i> Salir
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            <div class="subtitle">Gestion Portuaria</div>
         </div>
-    </nav>
+
+        <nav class="sidebar-nav">
+            <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"
+               href="{{ url_for('dashboard') }}">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+
+            <div class="sidebar-section">Operaciones Portuarias</div>
+            <a class="nav-link {% if request.endpoint == 'ships' %}active{% endif %}"
+               href="{{ url_for('ships') }}">
+                <i class="fas fa-ship"></i> Buques
+            </a>
+            <a class="nav-link {% if request.endpoint == 'cargo' %}active{% endif %}"
+               href="{{ url_for('cargo') }}">
+                <i class="bi bi-box-seam"></i> Mercancias
+            </a>
+            <a class="nav-link {% if request.endpoint == 'trace' %}active{% endif %}"
+               href="{{ url_for('trace') }}">
+                <i class="bi bi-diagram-3"></i> Trazabilidad
+            </a>
+
+            <div class="sidebar-section">Transporte</div>
+            <a class="nav-link {% if request.endpoint == 'rastreo' %}active{% endif %}"
+               href="{{ url_for('rastreo') }}">
+                <i class="bi bi-geo-alt"></i> Rastreo y Ultima Milla
+            </a>
+            <a class="nav-link {% if request.endpoint == 'trucks' %}active{% endif %}"
+               href="{{ url_for('trucks') }}">
+                <i class="fas fa-truck"></i> Camiones
+            </a>
+            <a class="nav-link {% if request.endpoint == 'drivers' %}active{% endif %}"
+               href="{{ url_for('drivers') }}">
+                <i class="bi bi-person-badge"></i> Conductores
+            </a>
+
+            <div class="sidebar-section">Infraestructura</div>
+            <a class="nav-link {% if request.endpoint == 'yards' %}active{% endif %}"
+               href="{{ url_for('yards') }}">
+                <i class="bi bi-grid-3x3-gap"></i> Patios y Bodegas
+            </a>
+            <a class="nav-link {% if request.endpoint == 'equipment' %}active{% endif %}"
+               href="{{ url_for('equipment') }}">
+                <i class="bi bi-tools"></i> Equipos
+            </a>
+
+            <div class="sidebar-section">Personal</div>
+            <a class="nav-link {% if request.endpoint == 'personnel' %}active{% endif %}"
+               href="{{ url_for('personnel') }}">
+                <i class="bi bi-people"></i> Gestion de Personal
+            </a>
+            <a class="nav-link {% if request.endpoint == 'documents' %}active{% endif %}"
+               href="{{ url_for('documents') }}">
+                <i class="bi bi-file-earmark-text"></i> Control Documental
+            </a>
+
+            <div class="sidebar-section">Seguridad</div>
+            <a class="nav-link {% if request.endpoint == 'accidents' %}active{% endif %}"
+               href="{{ url_for('accidents') }}">
+                <i class="bi bi-exclamation-triangle"></i> Accidentes
+            </a>
+            <a class="nav-link {% if request.endpoint == 'alerts' %}active{% endif %}"
+               href="{{ url_for('alerts') }}">
+                <i class="bi bi-bell"></i> Alertas
+            </a>
+            <a class="nav-link {% if request.endpoint == 'recommendations' %}active{% endif %}"
+               href="{{ url_for('recommendations') }}">
+                <i class="bi bi-lightbulb"></i> Recomendaciones
+            </a>
+            {% if current_user.role == 'admin' %}
+            <a class="nav-link {% if request.endpoint == 'access_logs' %}active{% endif %}"
+               href="{{ url_for('access_logs') }}">
+                <i class="bi bi-journal-text"></i> Control de Accesos
+            </a>
+            {% endif %}
+
+            <div class="sidebar-section">Analisis</div>
+            <a class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}"
+               href="{{ url_for('reports') }}">
+                <i class="bi bi-graph-up"></i> Reportes
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="avatar">{{ (current_user.full_name or current_user.username)[0]|upper }}</div>
+            <div class="user-info">
+                <div class="user-name">{{ current_user.full_name or current_user.username }}</div>
+                <div class="user-role">{{ current_user.role }}</div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="btn-logout" title="Cerrar sesion">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+        </div>
+    </aside>
+
     {% endif %}
 
-    <div class="container-fluid mt-3">
+    <div class="{% if current_user.is_authenticated %}main-content{% else %}container-fluid{% endif %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}

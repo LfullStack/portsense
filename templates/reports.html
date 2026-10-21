@@ -9,64 +9,85 @@
     </div>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-body text-center">
-                <h5 class="text-muted">Total Buques</h5>
-                <h2 class="text-primary">{{ total_ships }}</h2>
-            </div>
-        </div>
+<div class="row mb-3">
+    <div class="col-md-2">
+        <div class="card shadow"><div class="card-body text-center">
+            <h6 class="text-muted">Buques</h6><h2 class="text-primary">{{ total_ships }}</h2>
+            <a href="{{ url_for('export_buques_excel') }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div></div>
     </div>
-    <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-body text-center">
-                <h5 class="text-muted">Total Mercancias</h5>
-                <h2 class="text-info">{{ total_cargo }}</h2>
-                <a href="{{ url_for('export_mercancias_excel') }}" class="btn btn-sm btn-outline-success mt-2">
-                    <i class="bi bi-file-earmark-excel"></i> Mercancias Excel
-                </a>
-            </div>
-        </div>
+    <div class="col-md-2">
+        <div class="card shadow"><div class="card-body text-center">
+            <h6 class="text-muted">Mercancias</h6><h2 class="text-info">{{ total_cargo }}</h2>
+            <a href="{{ url_for('export_mercancias_excel') }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div></div>
     </div>
-    <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-body text-center">
-                <h5 class="text-muted">Peso Total</h5>
-                <h2 class="text-warning">{{ "%.1f"|format(total_weight) }} t</h2>
-            </div>
-        </div>
+    <div class="col-md-2">
+        <div class="card shadow"><div class="card-body text-center">
+            <h6 class="text-muted">Camiones</h6><h2 class="text-primary">{{ total_trucks }}</h2>
+            <a href="{{ url_for('export_camiones_excel') }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow"><div class="card-body text-center">
+            <h6 class="text-muted">Conductores</h6><h2 class="text-success">{{ total_drivers }}</h2>
+            <a href="{{ url_for('export_conductores_excel') }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow"><div class="card-body text-center">
+            <h6 class="text-muted">Personal</h6><h2 class="text-info">{{ total_personnel }}</h2>
+            <a href="{{ url_for('export_personal_excel') }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="card shadow"><div class="card-body text-center">
+            <h6 class="text-muted">Accidentes</h6><h2 class="text-danger">{{ total_accidents }}</h2>
+            <a href="{{ url_for('export_accidentes_excel') }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div></div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card shadow"><div class="card-body text-center">
+            <h6 class="text-muted">Equipos</h6><h2>{{ total_equipment }}</h2>
+            <a href="{{ url_for('export_equipos_excel') }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow"><div class="card-body text-center">
+            <h6 class="text-muted">Patios/Bodegas</h6><h2>{{ total_yards }}</h2>
+            <a href="{{ url_for('export_patios_excel') }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow"><div class="card-body text-center">
+            <h6 class="text-muted">Peso Total</h6><h2 class="text-warning">{{ "%.1f"|format(total_weight) }} t</h2>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow"><div class="card-body text-center">
+            <h6 class="text-muted">Alertas Activas</h6><h2 class="text-danger">{{ high_alerts + medium_alerts + low_alerts }}</h2>
+            <a href="{{ url_for('export_alertas_excel') }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div></div>
     </div>
 </div>
 
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card shadow">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-pie-chart"></i> Estado de Buques</span>
-                <a href="{{ url_for('export_buques_excel') }}" class="btn btn-sm btn-success">
-                    <i class="bi bi-file-earmark-excel"></i> Descargar Excel
-                </a>
-            </div>
+            <div class="card-header bg-dark text-white"><span><i class="bi bi-pie-chart"></i> Estado de Buques</span></div>
             <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="shipsChart"></canvas>
-                </div>
+                <div class="chart-container"><canvas id="shipsChart"></canvas></div>
             </div>
         </div>
     </div>
     <div class="col-md-6">
         <div class="card shadow">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-bar-chart"></i> Alertas por Severidad</span>
-                <a href="{{ url_for('export_alertas_excel') }}" class="btn btn-sm btn-success">
-                    <i class="bi bi-file-earmark-excel"></i> Descargar Excel
-                </a>
-            </div>
+            <div class="card-header bg-dark text-white"><span><i class="bi bi-bar-chart"></i> Alertas por Severidad</span></div>
             <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="alertsChart"></canvas>
-                </div>
+                <div class="chart-container"><canvas id="alertsChart"></canvas></div>
             </div>
         </div>
     </div>

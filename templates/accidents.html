@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Accidentes{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h4><i class="bi bi-exclamation-triangle"></i> Registro y Gestion de Accidentes</h4>
+        <p class="text-muted">Reporte, investigacion y seguimiento de accidentes</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('export_accidentes_excel') }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
+    </div>
+</div>
+
+{% if edit_accident %}
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning text-dark"><i class="bi bi-pencil"></i> Editar Accidente</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('edit_accident', accident_id=edit_accident.id) }}">
+            <div class="row g-3">
+                <div class="col-md-3"><label class="form-label">Titulo</label>
+                    <input type="text" class="form-control" name="title" value="{{ edit_accident.title }}" required></div>
+                <div class="col-md-2"><label class="form-label">Severidad</label>
+                    <select class="form-select" name="severity">
+                        {% for s in ['minor','moderate','severe','critical'] %}
+                        <option value="{{ s }}" {% if edit_accident.severity == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select></div>
+                <div class="col-md-2"><label class="form-label">Estado</label>
+                    <select class="form-select" name="status">
+                        {% for s in ['reported','investigating','resolved','closed'] %}
+                        <option value="{{ s }}" {% if edit_accident.status == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select></div>
+                <div class="col-md-3"><label class="form-label">Ubicacion</label>
+                    <input type="text" class="form-control" name="location" value="{{ edit_accident.location or '' }}"></div>
+                <div class="col-md-2"><label class="form-label">Heridos</label>
+                    <input type="number" class="form-control" name="injuries_count" value="{{ edit_accident.injuries_count }}"></div>
+                <div class="col-md-6"><label class="form-label">Descripcion</label>
+                    <textarea class="form-control" name="description" rows="2" required>{{ edit_accident.description }}</textarea></div>
+                <div class="col-md-12"><button type="submit" class="btn btn-warning">Guardar Cambios</button>
+                    <a href="{{ url_for('accidents') }}" class="btn btn-outline-secondary">Cancelar</a></div>
+            </div>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="card mb-4">
+    <div class="card-header bg-danger text-white"><i class="bi bi-exclamation-diamond"></i> Reportar Accidente</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('accidents') }}">
+            <div class="row g-3">
+                <div class="col-md-3"><label class="form-label">Titulo</label>
+                    <input type="text" class="form-control" name="title" required></div>
+                <div class="col-md-2"><label class="form-label">Severidad</label>
+                    <select class="form-select" name="severity">
+                        <option value="minor">Menor</option>
+                        <option value="moderate">Moderado</option>
+                        <option value="severe">Grave</option>
+                        <option value="critical">Critico</option>
+                    </select></div>
+                <div class="col-md-2"><label class="form-label">Fecha/Hora</label>
+                    <input type="datetime-local" class="form-control" name="accident_date" required></div>
+                <div class="col-md-3"><label class="form-label">Ubicacion</label>
+                    <input type="text" class="form-control" name="location"></div>
+                <div class="col-md-2"><label class="form-label">Heridos</label>
+                    <input type="number" class="form-control" name="injuries_count" value="0"></div>
+                <div class="col-md-3"><label class="form-label">Buque (opcional)</label>
+                    <select class="form-select" name="ship_id">
+                        <option value="">Ninguno</option>
+                        {% for s in ships %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+                    </select></div>
+                <div class="col-md-3"><label class="form-label">Camion (opcional)</label>
+                    <select class="form-select" name="truck_id">
+                        <option value="">Ninguno</option>
+                        {% for t in trucks_list %}<option value="{{ t.id }}">{{ t.plate_number }}</option>{% endfor %}
+                    </select></div>
+                <div class="col-md-3"><label class="form-label">Personal (opcional)</label>
+                    <select class="form-select" name="personnel_id">
+                        <option value="">Ninguno</option>
+                        {% for p in personnel_list %}<option value="{{ p.id }}">{{ p.first_name }} {{ p.last_name }}</option>{% endfor %}
+                    </select></div>
+                <div class="col-md-6"><label class="form-label">Descripcion</label>
+                    <textarea class="form-control" name="description" rows="2" required></textarea></div>
+                <div class="col-md-12"><button type="submit" class="btn btn-danger">Reportar Accidente</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% set sev_colors = {'minor':'bg-secondary', 'moderate':'bg-warning text-dark', 'severe':'bg-danger', 'critical':'bg-dark'} %}
+{% set status_colors = {'reported':'bg-danger', 'investigating':'bg-warning text-dark', 'resolved':'bg-info', 'closed':'bg-success'} %}
+
+<div class="card">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>ID</th><th>Titulo</th><th>Severidad</th><th>Estado</th><th>Ubicacion</th><th>Fecha</th><th>Heridos</th><th>Relacionado</th><th>Seguimientos</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+                {% for a in accidents %}
+                <tr>
+                    <td>{{ a.id }}</td>
+                    <td><strong>{{ a.title }}</strong></td>
+                    <td><span class="badge {{ sev_colors.get(a.severity, 'bg-secondary') }}">{{ a.severity }}</span></td>
+                    <td><span class="badge {{ status_colors.get(a.status, 'bg-secondary') }}">{{ a.status }}</span></td>
+                    <td>{{ a.location or 'N/A' }}</td>
+                    <td>{{ a.accident_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{{ a.injuries_count }}</td>
+                    <td>
+                        {% if a.ship %}<i class="fas fa-ship"></i> {{ a.ship.name }}
+                        {% elif a.truck %}<i class="fas fa-truck"></i> {{ a.truck.plate_number }}
+                        {% elif a.personnel %}<i class="bi bi-person"></i> {{ a.personnel.first_name }} {{ a.personnel.last_name }}
+                        {% else %}General{% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-info">{{ a.follow_ups|length }}</span>
+                        {% set pending = a.follow_ups|selectattr('status', 'equalto', 'pending')|list|length %}
+                        {% if pending > 0 %}<span class="badge bg-danger">{{ pending }} pend.</span>{% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('view_accident', accident_id=a.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                        <a href="{{ url_for('edit_accident', accident_id=a.id) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10" class="text-center text-muted">No hay accidentes registrados</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

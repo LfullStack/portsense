@@ -1,12 +1,43 @@
 console.log('PortuSense - Sistema de Gestion Portuaria');
 
+// ===================== SIDEBAR TOGGLE (MOBILE) =====================
+(function () {
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.getElementById('sidebarToggle');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (!sidebar || !toggle) return;
+
+    function closeSidebar() {
+        sidebar.classList.remove('show');
+        if (overlay) overlay.classList.remove('show');
+    }
+
+    toggle.addEventListener('click', () => {
+        sidebar.classList.toggle('show');
+        if (overlay) overlay.classList.toggle('show');
+    });
+
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+
+    sidebar.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth < 992) closeSidebar();
+        });
+    });
+})();
+
+// ===================== REFRESH AUTO DEL DASHBOARD =====================
 function refreshDashboard() {
+    const statPending = document.getElementById('stat-pending');
+    if (!statPending) return;
     fetch('/api/dashboard-data')
         .then(response => response.json())
         .then(data => {
-            document.getElementById('stat-pending').textContent = data.pending;
-            document.getElementById('stat-progress').textContent = data.in_progress;
-            document.getElementById('stat-completed').textContent = data.completed;
+            statPending.textContent = data.pending;
+            const p = document.getElementById('stat-progress');
+            const c = document.getElementById('stat-completed');
+            if (p) p.textContent = data.progress;
+            if (c) c.textContent = data.completed;
         })
         .catch(err => console.log('Error actualizando dashboard:', err));
 }

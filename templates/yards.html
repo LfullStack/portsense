@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block title %}Patios y Bodegas{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="proto-title"><i class="bi bi-grid-3x3-gap"></i> Patios y bodegas</h4>
+        <p class="proto-sub">Ocupacion de espacios, ubicacion de contenedores y etiquetas QR</p>
+    </div>
+    <a href="{{ url_for('export_patios_excel') }}" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+    </a>
+</div>
+
+<form class="track-input" id="scanForm" onsubmit="scanLookup(event)">
+    <input type="text" id="scanInput" placeholder="Simular escaneo: pega aqui el codigo leido (QR o barras, ej: MP-2201 o P1-05)">
+    <button type="submit" class="btn-proto"><i class="bi bi-upc-scan"></i> Buscar</button>
+</form>
+<p id="scanMsg" style="font-size:0.75rem;color:#c6553b;display:none;margin:-14px 0 14px"></p>
+
+<div class="subtabs" id="yardTabs">
+    {% for y in yards %}
+    <a class="btn-subtab {% if active_yard and active_yard.id == y.id %}active{% endif %}"
+       href="{{ url_for('yards', yard=y.id) }}">{{ y.name }} — {{ '%.0f'|format((y.current_occupancy_tons / y.capacity_tons * 100) if y.capacity_tons > 0 else 0) }}%</a>
+    {% endfor %}
+    <a class="btn-subtab {% if tab == 'gestion' %}active{% endif %}" href="{{ url_for('yards', tab='gestion') }}">
+        <i class="bi bi-gear"></i> Gestion
+    </a>
+</div>
+
+{% if tab == 'gestion' %}
+<!-- ========== GESTION DE PATIOS ========== -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-plus-circle"></i> Registrar Patio/Bodega</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('yards') }}">
+            <div class="row g-3">
+                <div class="col-md-3"><label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="name" required></div>
+                <div class="col-md-2"><label class="form-label">Tipo</label>
+                    <select class="form-select" name="yard_type">
+                        <option value="yard">Patio</option>
+                        <option value="warehouse">Bodega</option>
+                    </select></div>
+                <div class="col-md-2"><label class="form-label">Capacidad (t)</label>
+                    <input type="number" step="0.1" class="form-control" name="capacity_tons" required></div>
+                <div class="col-md-3"><label class="form-label">Ubicacion</label>
+                    <input type="text" class="form-control" name="location"></div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-proto w-100">Registrar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if edit_yard %}
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning text-dark"><i class="bi bi-pencil"></i> Editar Patio/Bodega</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('edit_yard', yard_id=edit_yard.id) }}">
+            <div class="row g-3">
+                <div class="col-md-2"><label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="name" value="{{ edit_yard.name }}" required></div>
+                <div class="col-md-2"><label class="form-label">Tipo</label>
+                    <select class="form-select" name="yard_type">
+                        <option value="yard" {% if edit_yard.yard_type == 'yard' %}selected{% endif %}>Patio</option>
+                        <option value="warehouse" {% if edit_yard.yard_type == 'warehouse' %}selected{% endif %}>Bodega</option>
+                    </select></div>
+                <div class="col-md-2"><label class="form-label">Capacidad (t)</label>
+                    <input type="number" step="0.1" class="form-control" name="capacity_tons" value="{{ edit_yard.capacity_tons }}" required></div>
+                <div class="col-md-2"><label class="form-label">Ocupacion (t)</label>
+                    <input type="number" step="0.1" class="form-control" name="current_occupancy_tons" value="{{ edit_yard.current_occupancy_tons }}"></div>
+                <div class="col-md-2"><label class="form-label">Estado</label>
+                    <select class="form-select" name="status">
+                        {% for s in ['active','maintenance','full'] %}
+                        <option value="{{ s }}" {% if edit_yard.status == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select></div>
+                <div class="col-md-2"><label class="form-label">Ubicacion</label>
+                    <input type="text" class="form-control" name="location" value="{{ edit_yard.location or '' }}"></div>
+                <div class="col-md-12"><button type="submit" class="btn btn-warning">Guardar Cambios</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header"><i class="bi bi-building"></i> Zonas registradas</div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>Zona</th><th>Tipo</th><th>Ubicacion</th><th>Ocupacion</th><th>Estado</th><th>Puestos</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for y in yards %}
+                {% set occ_pct = (y.current_occupancy_tons / y.capacity_tons * 100) if y.capacity_tons > 0 else 0 %}
+                <tr>
+                    <td><strong>{{ y.name }}</strong></td>
+                    <td>{{ 'Patio' if y.yard_type == 'yard' else 'Bodega' }}</td>
+                    <td><small>{{ y.location or '—' }}</small></td>
+                    <td style="min-width:140px">
+                        <div class="progress" style="height:14px;">
+                            <div class="progress-bar {{ 'bg-danger' if occ_pct > 85 else 'bg-warning' if occ_pct > 60 else 'bg-success' }}"
+                                 style="width: {{ [occ_pct, 100]|min }}%">{{ '%.0f'|format(occ_pct) }}%</div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if y.status == 'full' %}<span class="tag bad">Lleno</span>
+                        {% elif y.status == 'maintenance' %}<span class="tag warn">Mantenimiento</span>
+                        {% else %}<span class="tag ok">Activo</span>{% endif %}
+                    </td>
+                    <td>{{ y.slots|length }}</td>
+                    <td class="text-nowrap">
+                        {% if not y.slots %}
+                        <form method="POST" action="{{ url_for('init_yard_slots', yard_id=y.id) }}" style="display:inline">
+                            <button class="btn btn-sm btn-outline-primary" title="Generar 30 puestos"><i class="bi bi-grid-3x3-gap"></i></button>
+                        </form>
+                        {% else %}
+                        <a href="{{ url_for('yards', yard=y.id) }}" class="btn btn-sm btn-outline-secondary" title="Ver cuadricula"><i class="bi bi-eye"></i></a>
+                        {% endif %}
+                        <a href="{{ url_for('edit_yard', yard_id=y.id) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
+                        <a href="{{ url_for('delete_yard', yard_id=y.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminar?')"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-3">No hay patios ni bodegas registrados</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% elif active_yard %}
+<!-- ========== CUADRICULA DEL PATIO ACTIVO ========== -->
+{% set occ_pct = (active_yard.current_occupancy_tons / active_yard.capacity_tons * 100) if active_yard.capacity_tons > 0 else 0 %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-grid-3x3-gap"></i> {{ active_yard.name }} — {{ '%.0f'|format(occ_pct) }}% ocupado</span>
+        <small class="text-muted">{{ active_yard.location or 'Sin ubicacion' }} · {{ active_yard.current_occupancy_tons }}/{{ active_yard.capacity_tons }} t</small>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-2">Clic en un puesto disponible para asignar mercancia · clic en uno ocupado para ver su codigo QR</p>
+        <div class="yard-grid">
+            {% for s in active_yard.slots %}
+            <div class="slot {{ 'full' if s.status == 'full' else 'hold' if s.status == 'hold' else 'empty' }}"
+                 data-slot-id="{{ s.id }}" data-status="{{ s.status }}"
+                 onclick="selectSlot({{ s.id }}, '{{ s.code }}', '{{ s.status }}', '{{ s.cargo_name or '' }}', '{{ s.internal_code or '' }}', '{{ s.onu_number or '' }}', '{{ s.weight or '' }}', '{{ s.quantity or '' }}')"
+                 title="{{ s.code }}">{{ s.code if s.status != 'empty' else '' }}</div>
+            {% endfor %}
+        </div>
+        <div class="legend">
+            <span><i style="background:#1e8a7a"></i>Ocupado</span>
+            <span><i style="background:#e7924a"></i>En retencion</span>
+            <span><i style="background:#e2e7e5"></i>Disponible</span>
+        </div>
+    </div>
+</div>
+
+<div class="card" id="slotDetail" style="display:none">
+    <div class="card-header"><i class="bi bi-box-seam"></i> Puesto <span id="slotName"></span></div>
+    <div class="card-body">
+        <div id="assignMode" style="display:none">
+            <p class="text-muted small mb-2">Puesto disponible. Registra la mercancia que se ubicara aqui:</p>
+            <div class="row g-2 mb-2">
+                <div class="col-md-6"><input type="text" id="fNombre" class="fld" placeholder="Materia prima (ej. Metanol industrial)"></div>
+                <div class="col-md-3"><input type="text" id="fCodigo" class="fld" placeholder="Codigo interno" value="MP-2201"></div>
+                <div class="col-md-3"><input type="text" id="fOnu" class="fld" placeholder="N° ONU (opcional)"></div>
+                <div class="col-md-3"><input type="text" id="fPeso" class="fld" placeholder="Peso (ej. 200 kg)"></div>
+                <div class="col-md-3"><input type="text" id="fCantidad" class="fld" placeholder="Cantidad (ej. 40 sacos)"></div>
+            </div>
+            <button onclick="confirmAssign()" class="btn btn-proto"><i class="bi bi-check2-circle"></i> Asignar y generar QR</button>
+        </div>
+
+        <div id="infoMode" style="display:none">
+            <div class="info-grid">
+                <div><b id="iNombre">—</b><span>Materia prima</span></div>
+                <div><b id="iCodigo">—</b><span>Codigo interno</span></div>
+                <div><b id="iOnu">—</b><span>N° ONU</span></div>
+                <div><b id="iPeso">—</b><span>Peso</span></div>
+                <div><b id="iCantidad">—</b><span>Cantidad solicitada</span></div>
+                <div><b id="iEstado">—</b><span>Estado del puesto</span></div>
+            </div>
+            <div class="d-flex gap-4 align-items-center mt-3 flex-wrap">
+                <div id="qrBox"></div>
+                <div style="max-width:340px">
+                    <p class="text-muted small">Imprime esta etiqueta y pegala sobre la mercancia. Al escanearla se ve el puesto, la materia prima, el peso y la cantidad.</p>
+                    <button onclick="window.print()" class="btn btn-dark btn-sm"><i class="bi bi-printer"></i> Imprimir etiqueta</button>
+                    <button onclick="releaseSlot()" class="btn btn-sm" style="background:#c6553b;color:#fff"><i class="bi bi-box-arrow-right"></i> Liberar puesto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-info">Registra un patio o bodega en la pestaña <strong>Gestion</strong> para comenzar a usar la cuadricula.</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+let currentSlotId = null;
+
+function selectSlot(id, code, status, nombre, codigo, onu, peso, cantidad) {
+    currentSlotId = id;
+    document.getElementById('slotDetail').style.display = 'block';
+    document.getElementById('slotName').textContent = code;
+    if (status === 'empty') {
+        document.getElementById('assignMode').style.display = 'block';
+        document.getElementById('infoMode').style.display = 'none';
+        document.getElementById('fNombre').value = '';
+        document.getElementById('fCodigo').value = 'MP-2201';
+        document.getElementById('fOnu').value = '';
+        document.getElementById('fPeso').value = '';
+        document.getElementById('fCantidad').value = '';
+    } else {
+        document.getElementById('assignMode').style.display = 'none';
+        document.getElementById('infoMode').style.display = 'block';
+        document.getElementById('iNombre').textContent = nombre || '—';
+        document.getElementById('iCodigo').textContent = codigo || '—';
+        document.getElementById('iOnu').textContent = onu || '—';
+        document.getElementById('iPeso').textContent = peso || '—';
+        document.getElementById('iCantidad').textContent = cantidad || '—';
+        document.getElementById('iEstado').textContent = status === 'full' ? 'Ocupado' : 'En retencion';
+        const qrBox = document.getElementById('qrBox');
+        qrBox.innerHTML = '';
+        if (codigo) {
+            const payload = 'PUESTO:' + code + ' | MERCANCIA:' + (nombre || '-') + ' | COD:' + codigo +
+                (onu ? ' | ONU:' + onu : '') + (peso ? ' | PESO:' + peso : '') + (cantidad ? ' | CANT:' + cantidad : '');
+            new QRCode(qrBox, { text: payload, width: 120, height: 120, colorDark: '#0B1F2E', colorLight: '#ffffff' });
+        }
+    }
+    document.getElementById('slotDetail').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function confirmAssign() {
+    if (!currentSlotId) return;
+    const payload = {
+        cargo_name: document.getElementById('fNombre').value.trim(),
+        internal_code: document.getElementById('fCodigo').value.trim(),
+        onu_number: document.getElementById('fOnu').value.trim(),
+        weight: document.getElementById('fPeso').value.trim(),
+        quantity: document.getElementById('fCantidad').value.trim()
+    };
+    fetch('/api/yards/slots/' + currentSlotId + '/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) location.reload();
+        });
+}
+
+function releaseSlot() {
+    if (!currentSlotId) return;
+    if (!confirm('Liberar este puesto? La mercancia quedara registrada como retirada.')) return;
+    fetch('/api/yards/slots/' + currentSlotId + '/release', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) location.reload();
+        });
+}
+
+function scanLookup(ev) {
+    if (ev) ev.preventDefault();
+    const val = document.getElementById('scanInput').value.trim();
+    const msg = document.getElementById('scanMsg');
+    if (!val) return;
+    fetch('/api/yards/slots/scan?code=' + encodeURIComponent(val))
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                window.location = '{{ url_for("yards") }}?yard=' + data.yard_id + '&scan=' + data.slot_id;
+            } else {
+                msg.textContent = data.msg || 'No se encontro ningun puesto con ese codigo.';
+                msg.style.display = 'block';
+            }
+        })
+        .catch(() => {
+            msg.textContent = 'Error al consultar el servidor.';
+            msg.style.display = 'block';
+        });
+}
+
+(function () {
+    const params = new URLSearchParams(window.location.search);
+    const scan = params.get('scan');
+    if (scan) {
+        const slotEl = document.querySelector('.slot[data-slot-id="' + scan + '"]');
+        if (slotEl) slotEl.click();
+    }
+})();
+</script>
+{% endblock %}

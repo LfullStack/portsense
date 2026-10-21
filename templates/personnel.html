@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Personal{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h4><i class="bi bi-people"></i> Gestion de Personal</h4>
+        <p class="text-muted">Registro y administracion del personal del puerto</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('export_personal_excel') }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
+    </div>
+</div>
+
+{% if edit_person %}
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning text-dark"><i class="bi bi-pencil"></i> Editar Personal</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('edit_personnel', person_id=edit_person.id) }}">
+            <div class="row g-3">
+                <div class="col-md-2"><label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="first_name" value="{{ edit_person.first_name }}" required></div>
+                <div class="col-md-2"><label class="form-label">Apellido</label>
+                    <input type="text" class="form-control" name="last_name" value="{{ edit_person.last_name }}" required></div>
+                <div class="col-md-2"><label class="form-label">Cargo</label>
+                    <input type="text" class="form-control" name="position" value="{{ edit_person.position }}" required></div>
+                <div class="col-md-2"><label class="form-label">Departamento</label>
+                    <input type="text" class="form-control" name="department" value="{{ edit_person.department or '' }}"></div>
+                <div class="col-md-2"><label class="form-label">Telefono</label>
+                    <input type="text" class="form-control" name="phone" value="{{ edit_person.phone or '' }}"></div>
+                <div class="col-md-2"><label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="email" value="{{ edit_person.email or '' }}"></div>
+                <div class="col-md-2"><label class="form-label">Estado</label>
+                    <select class="form-select" name="status">
+                        {% for s in ['active','vacation','sick','terminated'] %}
+                        <option value="{{ s }}" {% if edit_person.status == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select></div>
+                <div class="col-md-12"><button type="submit" class="btn btn-warning">Guardar Cambios</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-plus-circle"></i> Registrar Personal</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('personnel') }}">
+            <div class="row g-3">
+                <div class="col-md-2"><label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="first_name" required></div>
+                <div class="col-md-2"><label class="form-label">Apellido</label>
+                    <input type="text" class="form-control" name="last_name" required></div>
+                <div class="col-md-2"><label class="form-label">Cargo</label>
+                    <input type="text" class="form-control" name="position" required></div>
+                <div class="col-md-2"><label class="form-label">Departamento</label>
+                    <input type="text" class="form-control" name="department"></div>
+                <div class="col-md-2"><label class="form-label">Telefono</label>
+                    <input type="text" class="form-control" name="phone"></div>
+                <div class="col-md-2"><label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="email"></div>
+                <div class="col-md-2"><label class="form-label">Fecha Ingreso</label>
+                    <input type="date" class="form-control" name="hire_date"></div>
+                <div class="col-md-12"><button type="submit" class="btn btn-primary">Registrar</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>ID</th><th>Nombre</th><th>Cargo</th><th>Departamento</th><th>Telefono</th><th>Email</th><th>Estado</th><th>Ingreso</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+                {% for p in personnel %}
+                <tr>
+                    <td>{{ p.id }}</td>
+                    <td><strong>{{ p.first_name }} {{ p.last_name }}</strong></td>
+                    <td>{{ p.position }}</td>
+                    <td>{{ p.department or 'N/A' }}</td>
+                    <td>{{ p.phone or 'N/A' }}</td>
+                    <td>{{ p.email or 'N/A' }}</td>
+                    <td>
+                        {% if p.status == 'active' %}<span class="badge bg-success">Activo</span>
+                        {% elif p.status == 'vacation' %}<span class="badge bg-info">Vacaciones</span>
+                        {% elif p.status == 'sick' %}<span class="badge bg-warning text-dark">Enfermo</span>
+                        {% else %}<span class="badge bg-secondary">Terminado</span>{% endif %}
+                    </td>
+                    <td>{{ p.hire_date.strftime('%d/%m/%Y') if p.hire_date else 'N/A' }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_personnel', person_id=p.id) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
+                        <a href="{{ url_for('delete_personnel', person_id=p.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminar personal?')"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="text-center text-muted">No hay personal registrado</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

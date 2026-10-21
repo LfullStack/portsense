@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Detalle de Accidente{% endblock %}
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-8">
+        <a href="{{ url_for('accidents') }}" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="bi bi-arrow-left"></i> Volver a Accidentes
+        </a>
+        <h4><i class="bi bi-exclamation-triangle"></i> {{ accident.title }}</h4>
+    </div>
+</div>
+
+{% set sev_colors = {'minor':'bg-secondary', 'moderate':'bg-warning text-dark', 'severe':'bg-danger', 'critical':'bg-dark'} %}
+{% set status_colors = {'reported':'bg-danger', 'investigating':'bg-warning text-dark', 'resolved':'bg-info', 'closed':'bg-success'} %}
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-info-circle"></i> Detalles del Accidente</div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3"><strong>Severidad:</strong> <span class="badge {{ sev_colors.get(accident.severity, '') }}">{{ accident.severity }}</span></div>
+                    <div class="col-md-3"><strong>Estado:</strong> <span class="badge {{ status_colors.get(accident.status, '') }}">{{ accident.status }}</span></div>
+                    <div class="col-md-3"><strong>Heridos:</strong> {{ accident.injuries_count }}</div>
+                    <div class="col-md-3"><strong>Fecha:</strong> {{ accident.accident_date.strftime('%d/%m/%Y %H:%M') }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4"><strong>Ubicacion:</strong> {{ accident.location or 'N/A' }}</div>
+                    <div class="col-md-4">
+                        <strong>Relacionado con:</strong>
+                        {% if accident.ship %}Buque: {{ accident.ship.name }}
+                        {% elif accident.truck %}Camion: {{ accident.truck.plate_number }}
+                        {% elif accident.personnel %}Personal: {{ accident.personnel.first_name }} {{ accident.personnel.last_name }}
+                        {% else %}General{% endif %}
+                    </div>
+                    <div class="col-md-4"><strong>Reportado por:</strong> {{ accident.creator.username if accident.creator else 'N/A' }}</div>
+                </div>
+                <hr>
+                <h6>Descripcion</h6>
+                <p class="text-muted">{{ accident.description }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark"><i class="bi bi-clipboard-plus"></i> Nuevo Seguimiento</div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_followup', accident_id=accident.id) }}">
+                    <div class="mb-2">
+                        <label class="form-label">Descripcion</label>
+                        <textarea class="form-control" name="description" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Accion Tomada</label>
+                        <textarea class="form-control" name="action_taken" rows="2"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Fecha Seguimiento</label>
+                        <input type="date" class="form-control" name="followup_date" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Estado</label>
+                        <select class="form-select" name="status">
+                            <option value="pending">Pendiente</option>
+                            <option value="in_progress">En Progreso</option>
+                            <option value="completed">Completado</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">Agregar Seguimiento</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><i class="bi bi-clock-history"></i> Historial de Seguimientos</div>
+    <div class="card-body">
+        {% for f in accident.follow_ups|sort(attribute='created_at', reverse=true) %}
+        <div class="border rounded p-3 mb-2 {% if f.status == 'completed' %}border-success{% elif f.status == 'in_progress' %}border-warning{% else %}border-secondary{% endif %}">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="badge bg-{% if f.status == 'completed' %}success{% elif f.status == 'in_progress' %}warning text-dark{% else %}secondary{% endif %} me-2">
+                        {% if f.status == 'completed' %}Completado
+                        {% elif f.status == 'in_progress' %}En Progreso
+                        {% else %}Pendiente{% endif %}
+                    </span>
+                    <strong>{{ f.followup_date.strftime('%d/%m/%Y') }}</strong>
+                    <small class="text-muted ms-2">por {{ f.creator.username if f.creator else 'N/A' }}</small>
+                </div>
+                {% if f.status != 'completed' %}
+                <div>
+                    {% if f.status == 'pending' %}
+                    <button class="btn btn-sm btn-outline-info" onclick="updateFollowup({{ f.id }}, 'in_progress')">Iniciar</button>
+                    {% endif %}
+                    <button class="btn btn-sm btn-outline-success" onclick="updateFollowup({{ f.id }}, 'completed')">Completar</button>
+                </div>
+                {% endif %}
+            </div>
+            <p class="mt-2 mb-1">{{ f.description }}</p>
+            {% if f.action_taken %}
+            <p class="text-muted small mb-0"><i class="bi bi-check2-circle"></i> Accion: {{ f.action_taken }}</p>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center">No hay seguimientos registrados para este accidente</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function updateFollowup(id, status) {
+    const form = new FormData();
+    form.append('status', status);
+    fetch('/accidents/followup/update/' + id, { method: 'POST', body: form })
+        .then(() => location.reload());
+}
+</script>
+{% endblock %}
